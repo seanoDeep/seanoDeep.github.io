@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="个人作品集网站">
+  <title>Haibus / 不深</title>
+  <link rel="stylesheet" href="css/style.css?v=3">
+  <!-- Font Awesome 图标库 -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+</head>
+<body>
+
+  <!-- ==================== 导航栏 ==================== -->
+  <header class="header" id="header">
+    <nav class="nav container">
+      <a href="#home" class="nav__logo">Hai<span>.</span>Bus</a>
+      <ul class="nav__menu" id="nav-menu">
+        <li><a href="#home" class="nav__link active">首页</a></li>
+        <li><a href="#about" class="nav__link">关于</a></li>
+        <li class="nav__dropdown-wrapper">
+          <a href="#services" class="nav__link nav__link--dropdown">
+            服务支持 
+          </a>
+        </li>
+        <li><a href="#contact" class="nav__link">联系我</a></li>
+       <li class="nav__dropdown-wrapper" id="nav-dropdown-wrapper">
+          <a href="#home" class="nav__link nav__link--dropdown" id="nav-portfolio-link">
+            作品 <i class="fas fa-chevron-down nav__dropdown-arrow" aria-hidden="true"></i>
+          </a>
+          <div class="collapse-inner">
+            <ul class="nav__dropdown" id="nav-dropdown">
+              <li class="nav__submenu-wrapper">
+                <a href="#home" class="nav__dropdown-link nav__dropdown-link--sub">
+                  项目 <i class="fas fa-chevron-right nav__submenu-arrow" aria-hidden="true"></i>
+                </a>
+                <div class="collapse-inner">
+                  <ul class="nav__submenu">
+                    <li><a href="https://mp.weixin.qq.com/s/8FgGAmS8zmmex2mU1gCcbw" class="nav__dropdown-link">项目演示一</a></li>
+                    <li><a href="love/index.html" class="nav__dropdown-link">星轨漫游</a></li>
+                  </ul>
+                </div>
+              </li>
+              <li><a href="#home" class="nav__dropdown-link" data-portfolio-filter="brand">设计理念</a></li>
+              <li><a href="#home" class="nav__dropdown-link" data-portfolio-filter="web">开发作品</a></li>
+              <li><a href="#home" class="nav__dropdown-link" data-portfolio-filter="ui">其他</a></li>
+            </ul>
+          </div>
+        </li>
+        <li class="nav__dropdown-wrapper">
+          <a href="#" class="nav__link nav__link--dropdown">
+            资源下载 <i class="fas fa-chevron-down nav__dropdown-arrow" aria-hidden="true"></i>
+          </a>
+          <div class="collapse-inner">
+            <ul class="nav__dropdown">
+              <li><a href="https://github.com/long1049329211/KeymouseGo" class="nav__dropdown-link" target="_blank"><i class="fab fa-github" aria-hidden="true"></i> 作品仓库</a></li>
+              <li><a href="#" class="nav__dropdown-link" id="nav-resume-download"><i class="fas fa-envelope" aria-hidden="true"></i> 简历下载</a></li>
+              <li><a href="./img/ncai.txt" class="nav__dropdown-link"><i class="fas fa-ellipsis-h" aria-hidden="true"></i> 其他</a></li>
+            </ul>
+          </div>
+        </li>
+      </ul>
+      <div class="nav__backdrop" id="nav-backdrop"></div>
+      <div class="nav__actions">
+        <div class="nav__login" id="nav-login" title="登录 / 注册">
+          <i class="fas fa-user-circle"></i>
+        </div>
+        <div class="nav__toggle" id="nav-toggle">
+          <i class="fas fa-bars"></i>
+        </div>
+        <div class="nav__theme" id="theme-toggle">
+          <i class="fas fa-moon"></i>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ==================== 首页 Hero ==================== -->
+    <section class="hero" id="home">
+      <div class="hero__bg"></div>
+      <div class="hero__container container">
+        <div class="hero__content">
+          <span class="hero__greeting">Hi~ </span>
+          <h1 class="hero__title">Welcome to Haibus</h1>
+          <div class="hero__typed">
+            <span class="typed-text" id="typed-text"></span>
+            <span class="typed-cursor">|</span>
+          </div>
+          <p class="hero__desc">
+              此内容正在制作中....
+          </p>
+          <div class="hero__actions">
+            <a href="#services" class="btn btn--primary">查看更多</a>
+            <a href="#contact" class="btn btn--outline">联系我</a>
+          </div> 
+          <div class="hero__social">
+            <a href="https://github.com/" title="GitHub" ><i class="fab fa-github"></i></a>
+            <a href="https://mail.qq.com/" title="Email"><i class="fa-solid fa-envelope"></i></a>
+            <a href="#" title="Twitter"><i class="fab fa-x-twitter"></i></a>
+            <a href="https://www.163gz.com/" title="163gz"><i class="fab fa-dribbble"></i></a>
+          </div>
+        </div>
+        <div class="hero__image">
+          <div class="hero__showcase">
+
+            <!-- 3D 卡牌轮播 -->
+            <div class="hero__carousel" id="hero-carousel">
+              <div class="hero__carousel-stage" id="hero-carousel-stage">
+                <div class="hero__carousel-card active" data-index="0" data-category="brand" data-href="#services" data-target="anchor">
+                  <div class="hero__carousel-card-inner">
+                    <img src="https://images.unsplash.com/photo-1561070791-2526d30994b5?w=600&h=450&fit=crop" alt="品牌设计">
+                    <div class="hero__carousel-card-body">
+                      <h4>资源对接</h4>
+                      <span>衔接优质资源，赋能业务发展</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="hero__carousel-card" data-index="1" data-category="web" data-href="#services" data-target="anchor">
+                  <div class="hero__carousel-card-inner">
+                    <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=450&fit=crop" alt="Web 开发">
+                    <div class="hero__carousel-card-body">
+                      <h4>电商平台重构</h4>
+                      <span>Web 开发</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="hero__carousel-card" data-index="2" data-category="ui" data-href="#services" data-target="anchor">
+                  <div class="hero__carousel-card-inner">
+                    <img src="https://images.unsplash.com/photo-1545235617-9465d2a55698?w=600&h=450&fit=crop" alt="UI/UX">
+                    <div class="hero__carousel-card-body">
+                      <h4>前端|App</h4>
+                      <span>自动化办公定制，脚本制作</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="hero__carousel-card" data-index="3" data-category="web" data-href="love/index.html" data-target="url">
+                  <div class="hero__carousel-card-inner">
+                    <img src="https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=600&h=450&fit=crop" alt="摄影作品">
+                    <div class="hero__carousel-card-body">
+                      <h4>极简产品</h4>
+                      <span>开发作品</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="hero__carousel-card" data-index="4" data-category="web" data-href="love/index.html" data-target="url">
+                  <div class="hero__carousel-card-inner">
+                    <img src="https://vasturiano.github.io/globe.gl/example/airline-routes/preview.png" alt="Globe 3D 可视化">
+                    <div class="hero__carousel-card-body">
+                      <h4>星轨漫游 3D</h4>
+                      <span>推演契合，这将是你的首个选项</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="hero__carousel-controls">
+                <button class="hero__carousel-arrow hero__carousel-arrow--prev" id="hero-carousel-prev" aria-label="上一张">
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="hero__carousel-arrow hero__carousel-arrow--next" id="hero-carousel-next" aria-label="下一张">
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
+              <div class="hero__carousel-filters">
+                <button class="hero__carousel-filter active" data-filter="all">全部</button>
+                <button class="hero__carousel-filter" data-filter="brand">设计</button>
+                <button class="hero__carousel-filter" data-filter="web">开发作品</button>
+                <button class="hero__carousel-filter" data-filter="ui">其他</button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+      <a href="#about" class="hero__scroll">
+        <span>滚动</span>
+        <i class="fas fa-chevron-down"></i>
+      </a>
+    </section>
+
+    <!-- ==================== 关于 ==================== -->
+    <section class="about section" id="about">
+      <div class="container">
+        <h2 class="section__title">关于我</h2>
+        <span class="section__subtitle">Who I Am</span>
+        <div class="about__grid">
+          <div class="about__image">
+            <img src="./img/160_54.ico" alt="工作环境">
+          </div>
+          <div class="about__content">
+            <h3>山不在高有仙则名，水不在深有龙则灵</h3>
+            <p class="duanluo">
+              自2022年10月起，先后服务于华某科技有限公司招商银行某分中心、上海某房地产经纪有限公司、某县直政府部门办公室。
+            </p>
+            <p class="duanluo">
+              拥有生产<b>技术文档撰写</b>能力，自动化编排与生产。两段头部企业<b>营销岗位</b>从业经历，深耕市场一线，具备成熟客户对接、业务拓展与商务沟通能力；兼具办公室综合事务实操经验，
+              熟练掌握公文撰写、材料整理、日常统筹等文职工作。<b>计算机专业</b>功底扎实，可独立完成数据整理、系统操作、办公工具高效运用，能够兼顾业务开拓与内勤文字类工作。
+              学习适应能力强，兼具销售岗位的沟通攻坚能力与行政办公的严谨细致，执行力突出，责任心强，可快速适配复合型工作需求。
+               
+            </p>
+            <p class="duanluo">
+                专注于产品赋能变现、Web 开发与内容创作。
+          致力于将创意转化为有影响力的作品，帮助实现品牌价值。
+        融合现代人工大模型自动化办公和脚本编写，拥有变革性的解决方案。
+          成为你的营销<b>合作</b>合作伙伴或受到你的雇佣，为你提供专业技术支持。
+              我们终将解决所有问题，实现前所未有的价值。
+            </p>
+            <div class="about__stats">
+              <div class="about__stat">
+                <span class="about__stat-number" data-count="5">0</span>+
+                <span class="about__stat-label">年经验</span>
+              </div>
+              <div class="about__stat">
+                <span class="about__stat-number" data-count="110">0</span>+
+                <span class="about__stat-label">成交客户</span>
+              </div>
+              <div class="about__stat">
+                <span class="about__stat-number" data-count="20">0</span>+
+                <span class="about__stat-label">完成项目</span>
+              </div>
+            </div>
+            <a href="#contact" class="btn btn--primary">了解更多</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 服务 ==================== -->
+    <section class="services section" id="services">
+      <div class="container">
+        <h2 class="section__title">服务项目</h2>
+        <span class="section__subtitle">What I Offer</span>
+        <div class="services__grid">
+          <div class="service-card">
+            <div class="service-card__icon"><i class="fas fa-paint-brush"></i></div>
+            <h3>设计</h3>
+            <p>LOGO、VI 系统、品牌手册、包装设计，打造一致且独特的品牌视觉体系。</p>
+            <a href="#" class="service-card__link">了解更多 <i class="fas fa-arrow-right"></i></a>
+          </div>
+          <div class="service-card">
+            <div class="service-card__icon"><i class="fas fa-code"></i></div>
+            <h3>Web 开发</h3>
+            <p>响应式网站、企业官网、落地页、小程序，使用最新技术栈构建高性能前端。</p>
+            <a href="#" class="service-card__link">了解更多 <i class="fas fa-arrow-right"></i></a>
+          </div>
+          <div class="service-card">
+            <div class="service-card__icon"><i class="fas fa-mobile-alt"></i></div>
+            <h3>UI/UX </h3>
+            <p>用户界面设计、交互原型、用户研究，以用户为中心打造流畅体验。</p>
+            <a href="#" class="service-card__link">了解更多 <i class="fas fa-arrow-right"></i></a>
+          </div>
+          <div class="service-card">
+            <div class="service-card__icon"><i class="fas fa-pen-fancy"></i></div>
+            <h3>内容创作</h3>
+            <p>文案撰写、社交媒体内容、品牌故事，用文字传递品牌价值与温度。</p>
+            <a href="#" class="service-card__link">了解更多 <i class="fas fa-arrow-right"></i></a>
+          </div>
+          <div class="service-card">
+            <div class="service-card__icon"><i class="fas fa-camera"></i></div>
+            <h3>赋能发展</h3>
+            <p>整合了各类社会优质资源，提供专业的支持，赋能业务发展，实现产业突破。</p>
+            <a href="#" class="service-card__link">了解更多 <i class="fas fa-arrow-right"></i></a>
+          </div>
+          <div class="service-card">
+            <div class="service-card__icon"><i class="fas fa-bullhorn"></i></div>
+            <h3>数字营销</h3>
+            <p>SEO 优化、社交媒体运营、广告投放策略，帮助你精准触达目标用户。</p>
+            <a href="#" class="service-card__link">了解更多 <i class="fas fa-arrow-right"></i></a>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ==================== 联系 ==================== -->
+    <section class="contact section" id="contact">
+      <div class="container">
+        <h2 class="section__title">联系我</h2>
+        <span class="section__subtitle">Get In Touch</span>
+        <div class="contact__grid">
+          <div class="contact__info">
+            <h3>有合作？</h3>
+            <p>欢迎随时联系，我会在 24 小时内回复你。</p>
+            <div class="contact__details">
+              <div class="contact__detail">
+                <i class="fas fa-envelope"></i>
+                <div>
+                  <h4>邮箱</h4>
+                  <span>1049329211@qq.com</span>
+                </div>
+              </div>
+              <div class="contact__detail">
+                <i class="fas fa-map-marker-alt"></i>
+                <div>
+                  <h4>所在地</h4>
+                  <span>中国 · China</span>
+                </div>
+              </div>
+              <div class="contact__detail">
+                <i class="fas fa-phone"></i>
+                <div>
+                  <h4>电话</h4>
+                  <span>暂不支持电话 · The number is not available</span>
+                </div>
+              </div>
+            </div>
+          </div>
+         <div class="about__image">
+            <img src="./img/联系.gif" alt="联系我">
+          </div> 
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== 页脚 ==================== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__grid">
+        <div class="footer__brand">
+          <a href="#home" class="footer__logo">Hai<span>.</span>Bus</a>
+          <p>用创意与技术，为明天赋能。</p>
+        </div>
+        <div class="footer__links">
+          <h4>快速导航</h4>
+          <ul>
+            <li><a href="#home">首页</a></li>
+            <li><a href="#about">关于</a></li>
+            <li><a href="#services">服务</a></li>
+            <li><a href="#home">作品</a></li>
+            <li><a href="#contact">联系</a></li>
+          </ul>
+        </div>
+        <div class="footer__links">
+          <h4>技术支持</h4>
+          <ul>
+            <li><a href="#services">设计</a></li>
+            <li><a href="#services">Web 开发</a></li>
+            <li><a href="#services">雇佣</a></li>
+            <li><a href="#services">内容创作</a></li>
+          </ul>
+        </div>
+        <div class="footer__newsletter">
+          <h4>订阅动态</h4>
+          <p>获取最新作品与行业洞察</p>
+          <form class="footer__subscribe" id="subscribe-form">
+            <input type="email" id="subscribe-email" placeholder="输入邮箱地址" required autocomplete="email">
+            <button type="submit" aria-label="订阅"><i class="fas fa-paper-plane"></i></button>
+          </form>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <p>&copy; Hai Bus. 给未知赋予定义.</p>
+        <div class="footer__social">
+          <a href="#"><i class="fab fa-github"></i></a>
+          <a href="#"><i class="fab fa-linkedin-in"></i></a>
+          <a href="#"><i class="fab fa-x-twitter"></i></a>
+          <a href="#"><i class="fab fa-dribbble"></i></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 回到顶部 -->
+  <a href="#home" class="back-to-top" id="back-to-top">
+    <i class="fas fa-arrow-up"></i>
+  </a>
+
+  <!-- 登录 / 注册 弹窗 -->
+  <div class="modal-overlay" id="login-modal">
+    <div class="modal">
+      <button class="modal__close" id="modal-close">&times;</button>
+      <div class="modal__header">
+        <h2 class="modal__title">欢迎回来</h2>
+        <p class="modal__subtitle">登录或注册你的账户</p>
+      </div>
+      <form class="modal__form" id="login-form">
+        <div class="form__group">
+          <label class="form__label" for="login-username">用户名 / 邮箱</label>
+          <input type="text" id="login-username" class="form__input" placeholder="请输入用户名或邮箱" required>
+        </div>
+        <div class="form__group">
+          <label class="form__label" for="login-password">密码</label>
+          <div class="form__password-wrapper">
+            <input type="password" id="login-password" class="form__input" placeholder="请输入密码" required>
+            <i class="fas fa-eye form__password-toggle" id="password-toggle"></i>
+          </div>
+        </div>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--primary btn--full" id="btn-login">登录</button>
+          <button type="button" class="btn btn--outline btn--full" id="btn-register">注册</button>
+        </div>
+      </form>
+    </div>
+  </div>
+   <!-- 联系我 / 发送邮件 弹窗 -->
+  <div class="modal-overlay" id="contact-modal" role="dialog" aria-labelledby="contact-modal-title" aria-modal="true">
+    <div class="modal modal--contact">
+      <button class="modal__close" id="contact-modal-close" aria-label="关闭弹窗">&times;</button>
+      <div class="modal__header">
+        <h2 class="modal__title" id="contact-modal-title">发送消息</h2>
+        <p class="modal__subtitle">填写以下信息，我会尽快回复你</p>
+      </div>
+      <form class="modal__form" id="contact-form" novalidate>
+        <div class="form__group">
+          <label class="form__label" for="contact-name">姓名</label>
+          <input type="text" id="contact-name" class="form__input" placeholder="你的名字" required autocomplete="name">
+        </div>
+        <div class="form__group">
+          <label class="form__label" for="contact-email">邮箱</label>
+          <input type="email" id="contact-email" class="form__input" placeholder="你的邮箱" required autocomplete="email">
+        </div>
+        <div class="form__group">
+          <label class="form__label" for="contact-subject">主题</label>
+          <input type="text" id="contact-subject" class="form__input" placeholder="项目主题" autocomplete="off">
+        </div>
+        <div class="form__group">
+          <label class="form__label" for="contact-message">需求描述</label>
+          <textarea id="contact-message" class="form__input form__textarea" rows="5" placeholder="描述你的需求..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn--primary btn--full">
+          <span class="btn__text">发送消息</span>
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </form>
+    </div>
+  </div>    
+  <script src="js/main.js?v=3"></script>
+</body>
+</html>

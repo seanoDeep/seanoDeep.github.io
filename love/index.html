@@ -1,0 +1,2430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>星轨漫游v1.0</title>
+<style>
+/* ============================================================
+   CSS Reset & Base
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","苹方",sans-serif;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;background:#0a0a1a;color:#e8e0f0}
+:root{
+  --bg-deep:#0a0a1a;--bg-mid:#0f0f2e;--bg-light:#1a1a3e;
+  --gold:#e8c97a;--gold-light:#f5e0a8;--rose:#d4a0b8;--rose-light:#f0c8d8;
+  --purple:#9b8ec4;--purple-light:#c4b8e8;--blue:#6b8ec4;--blue-light:#a0c8f0;
+  --text-primary:#e8e0f0;--text-secondary:#c0b8d8;--text-dim:#8880a8;
+  --glass-bg:rgba(20,15,40,0.55);--glass-border:rgba(180,160,220,0.15);
+  --radius-sm:8px;--radius-md:16px;--radius-lg:24px;--radius-xl:32px;
+  --transition-slow:0.8s cubic-bezier(0.25,0.1,0.25,1);
+  --transition-mid:0.5s cubic-bezier(0.25,0.1,0.25,1);
+  --transition-fast:0.3s cubic-bezier(0.25,0.1,0.25,1);
+}
+
+/* Canvas Layers */
+#bgCanvas,#fxCanvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+#fxCanvas{z-index:5}
+
+/* Main Container */
+#app{position:relative;width:100%;height:100%;z-index:1;overflow:hidden}
+
+/* ============================================================
+   Act Container (all acts share this base)
+   ============================================================ */
+.act{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity var(--transition-slow),transform var(--transition-slow);pointer-events:none;opacity:0;transform:scale(0.96)}
+.act.active{opacity:1;transform:scale(1);pointer-events:auto}
+.act.exit-forward{opacity:0;transform:scale(1.06)}
+.act.exit-backward{opacity:0;transform:scale(0.94)}
+
+/* ============================================================
+   Act 1: 星空入口
+   ============================================================ */
+#act1{z-index:10}
+.act1-guide{font-size:1.2rem;color:var(--text-secondary);text-align:center;letter-spacing:0.15em;margin-bottom:3rem;animation:guideFloat 3s ease-in-out infinite;text-shadow:0 0 30px rgba(200,180,240,0.3)}
+@keyframes guideFloat{0%,100%{transform:translateY(0);opacity:0.8}50%{transform:translateY(-8px);opacity:1}}
+.act1-star{width:80px;height:80px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#fff8e0,#e8c97a 30%,#9b6e2a 70%,transparent 100%);box-shadow:0 0 40px rgba(232,201,122,0.5),0 0 80px rgba(232,201,122,0.25),0 0 120px rgba(220,180,140,0.15);cursor:pointer;animation:starBreath 2.5s ease-in-out infinite;transition:transform var(--transition-fast),box-shadow var(--transition-fast)}
+@keyframes starBreath{0%,100%{transform:scale(1);box-shadow:0 0 40px rgba(232,201,122,0.5),0 0 80px rgba(232,201,122,0.25)}50%{transform:scale(1.12);box-shadow:0 0 60px rgba(232,201,122,0.65),0 0 100px rgba(232,201,122,0.35)}}
+.act1-star.pressing{animation:none;transform:scale(1.35);box-shadow:0 0 80px rgba(255,220,160,0.8),0 0 140px rgba(232,201,122,0.5),0 0 200px rgba(220,180,140,0.3)}
+.act1-hint{font-size:0.8rem;color:var(--text-dim);margin-top:2.5rem;letter-spacing:0.1em;animation:guideFloat 3s ease-in-out infinite;animation-delay:1.5s}
+.act1-progress{position:absolute;bottom:15%;left:50%;transform:translateX(-50%);width:60px;height:60px;border-radius:50%;border:2px solid rgba(232,201,122,0.3);opacity:0;transition:opacity var(--transition-fast)}
+.act1-progress.show{opacity:1}
+.act1-progress-ring{width:100%;height:100%;border-radius:50%;border:2px solid transparent;border-top-color:var(--gold);animation:progressSpin 1s linear infinite;opacity:0;transition:opacity var(--transition-fast)}
+.act1-progress-ring.show{opacity:1}
+@keyframes progressSpin{to{transform:rotate(360deg)}}
+
+/* Camera zoom overlay */
+.camera-zoom{position:fixed;top:0;left:0;width:100%;height:100%;z-index:50;pointer-events:none;opacity:0;transition:opacity 0.1s;background:radial-gradient(ellipse at center,rgba(20,10,40,0.6),rgba(5,3,15,0.95))}
+.camera-zoom.active{opacity:1;animation:cameraZoomIn 1.2s cubic-bezier(0.16,1,0.3,1) forwards}
+@keyframes cameraZoomIn{0%{transform:scale(1);filter:brightness(1)}40%{transform:scale(1.8);filter:brightness(1.5)}100%{transform:scale(3);filter:brightness(2);opacity:0}}
+
+/* ============================================================
+   Act 2: 星轨回忆 — 多主题星球 + 星座进度 + 状态系统
+   ============================================================ */
+#act2{z-index:10}
+.act2-container{width:100%;height:100%;overflow-y:auto;overflow-x:hidden;padding:70px 20px 80px;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+.act2-container::-webkit-scrollbar{display:none}
+
+/* 星轨主体 */
+.act2-trail{position:relative;width:100%;display:flex;flex-direction:column;align-items:center;padding:20px 0}
+.act2-trail-line{position:absolute;left:50%;top:0;width:2px;height:100%;background:linear-gradient(to bottom,transparent,rgba(180,160,220,0.12) 3%,rgba(180,160,220,0.12) 97%,transparent);transform:translateX(-50%);z-index:0}
+.act2-trail-glow{position:absolute;left:50%;top:0;width:3px;height:0%;background:linear-gradient(to bottom,var(--gold),var(--rose),var(--purple-light),var(--blue-light));transform:translateX(-50%);z-index:1;transition:height 0.8s cubic-bezier(0.25,0.1,0.25,1);box-shadow:0 0 14px rgba(232,201,122,0.35),0 0 30px rgba(180,150,220,0.15)}
+
+/* 星球容器 */
+.act2-planet{position:relative;z-index:2;width:100%;max-width:320px;display:flex;align-items:center;margin:35px 0;cursor:pointer;opacity:0.35;transition:opacity var(--transition-mid),transform var(--transition-mid);filter:grayscale(0.6) brightness(0.6)}
+.act2-planet.unlocked{opacity:1;filter:grayscale(0) brightness(1)}
+.act2-planet.state-awakening{opacity:0.65;filter:grayscale(0.3) brightness(0.75);animation:planetAwaken 2.5s ease-in-out infinite}
+@keyframes planetAwaken{0%,100%{opacity:0.55;filter:grayscale(0.35) brightness(0.7)}50%{opacity:0.75;filter:grayscale(0.2) brightness(0.85)}}
+.act2-planet.state-completed .act2-planet-dot{box-shadow:0 0 14px rgba(232,201,122,0.3),0 0 30px rgba(220,180,120,0.12) !important}
+.act2-planet.left{flex-direction:row;padding-right:30%}
+.act2-planet.right{flex-direction:row-reverse;padding-left:30%}
+
+/* ---- 星球核心（六种主题） ---- */
+.act2-planet-dot{width:50px;height:50px;min-width:50px;border-radius:50%;animation:planetFloat 3.5s ease-in-out infinite;transition:all var(--transition-mid);position:relative;overflow:hidden}
+.act2-planet.unlocked .act2-planet-dot{animation:planetFloat 3.5s ease-in-out infinite,planetUnlockBurst 0.6s ease-out}
+@keyframes planetFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes planetUnlockBurst{0%{transform:scale(1.4);filter:brightness(1.8)}60%{transform:scale(0.9)}100%{transform:scale(1);filter:brightness(1)}}
+
+/* 主题：水晶 crystal — 蓝紫半透明棱形辉光 */
+.act2-planet-dot.theme-crystal{
+  background:radial-gradient(circle at 35% 30%,rgba(200,180,255,0.9),#7b6cb0 45%,#3a2a6a 80%,#1a0a3a 100%);
+  box-shadow:0 0 18px rgba(150,130,220,0.35),0 0 40px rgba(120,100,200,0.15),inset 0 -3px 6px rgba(0,0,0,0.3);
+}
+.act2-planet.unlocked .act2-planet-dot.theme-crystal{
+  box-shadow:0 0 28px rgba(180,160,240,0.55),0 0 55px rgba(150,130,220,0.25),0 0 80px rgba(120,100,200,0.1),inset 0 -3px 8px rgba(0,0,0,0.25);
+}
+.act2-planet-dot.theme-crystal::after{
+  content:'';position:absolute;top:12%;left:18%;width:30%;height:22%;background:rgba(255,255,255,0.5);
+  border-radius:50%;transform:rotate(-20deg);pointer-events:none;
+}
+
+/* 主题：星云 nebula — 旋转气体极光环带 */
+.act2-planet-dot.theme-nebula{
+  background:radial-gradient(circle at 40% 35%,#f0c8e0,#c080a0 35%,#705080 65%,#2a1a30 100%);
+  box-shadow:0 0 18px rgba(200,150,180,0.35),0 0 40px rgba(180,130,160,0.15);
+}
+.act2-planet.unlocked .act2-planet-dot.theme-nebula{
+  box-shadow:0 0 28px rgba(220,170,200,0.5),0 0 55px rgba(200,150,180,0.25),0 0 80px rgba(180,130,160,0.1);
+}
+/* 极光环带 */
+.act2-planet-dot.theme-nebula::before{
+  content:'';position:absolute;top:-2px;left:-2px;right:-2px;bottom:-2px;border-radius:50%;
+  border:2px solid transparent;border-top-color:rgba(240,200,180,0.5);border-right-color:rgba(200,160,220,0.3);
+  animation:nebulaRing 4s linear infinite;pointer-events:none;
+}
+@keyframes nebulaRing{to{transform:rotate(360deg)}}
+
+/* 主题：熔岩 lava — 暖金流动火星升腾 */
+.act2-planet-dot.theme-lava{
+  background:radial-gradient(circle at 40% 35%,#ffe8c0,#e8a840 40%,#c07020 65%,#5a2008 100%);
+  box-shadow:0 0 18px rgba(240,180,100,0.4),0 0 40px rgba(220,160,80,0.2);
+}
+.act2-planet.unlocked .act2-planet-dot.theme-lava{
+  box-shadow:0 0 28px rgba(250,200,120,0.55),0 0 55px rgba(230,180,100,0.3),0 0 80px rgba(200,150,80,0.12);
+}
+/* 熔岩裂纹 */
+.act2-planet-dot.theme-lava::after{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 30% 60%,transparent 40%,rgba(255,160,40,0.25) 50%,transparent 60%),
+             radial-gradient(circle at 60% 40%,transparent 35%,rgba(255,140,30,0.2) 48%,transparent 58%);
+  animation:lavaFlow 3s ease-in-out infinite;pointer-events:none;
+}
+@keyframes lavaFlow{0%,100%{opacity:0.5}50%{opacity:1}}
+
+/* 主题：冰霜 ice — 冷白蓝调冰晶飘散 */
+.act2-planet-dot.theme-ice{
+  background:radial-gradient(circle at 35% 30%,rgba(220,240,255,0.95),#80b0d0 40%,#3a6080 65%,#0a1a30 100%);
+  box-shadow:0 0 18px rgba(160,200,230,0.35),0 0 40px rgba(130,180,210,0.15);
+}
+.act2-planet.unlocked .act2-planet-dot.theme-ice{
+  box-shadow:0 0 28px rgba(180,220,250,0.5),0 0 55px rgba(160,200,230,0.25),0 0 80px rgba(130,180,210,0.1);
+}
+.act2-planet-dot.theme-ice::after{
+  content:'';position:absolute;top:8%;left:20%;width:28%;height:20%;background:rgba(255,255,255,0.6);
+  border-radius:50%;transform:rotate(-15deg);pointer-events:none;
+}
+
+/* 主题：星尘 stardust — 粉紫闪烁星尘环绕 */
+.act2-planet-dot.theme-stardust{
+  background:radial-gradient(circle at 38% 32%,#ffe8ff,#d0a0d0 40%,#805080 65%,#2a0a2a 100%);
+  box-shadow:0 0 18px rgba(220,160,220,0.4),0 0 40px rgba(200,140,200,0.2);
+  animation:planetFloat 3.5s ease-in-out infinite,stardustGlint 2s ease-in-out infinite;
+}
+.act2-planet.unlocked .act2-planet-dot.theme-stardust{
+  box-shadow:0 0 28px rgba(240,180,240,0.55),0 0 55px rgba(220,160,220,0.3),0 0 80px rgba(200,140,200,0.12);
+}
+@keyframes stardustGlint{0%,100%{filter:brightness(1)}30%{filter:brightness(1.2)}60%{filter:brightness(0.9)}}
+
+/* 主题：环带 ringed — 倾斜光环 */
+.act2-planet-dot.theme-ringed{
+  background:radial-gradient(circle at 38% 32%,#ffe8d0,#d0a870 40%,#806030 65%,#2a1808 100%);
+  box-shadow:0 0 18px rgba(220,180,120,0.35),0 0 40px rgba(200,160,100,0.15);
+}
+.act2-planet.unlocked .act2-planet-dot.theme-ringed{
+  box-shadow:0 0 28px rgba(240,200,140,0.5),0 0 55px rgba(220,180,120,0.25),0 0 80px rgba(200,160,100,0.1);
+}
+/* 倾斜光环 */
+.act2-planet-dot.theme-ringed::before{
+  content:'';position:absolute;top:50%;left:50%;width:140%;height:20%;background:transparent;
+  border:2px solid rgba(240,200,140,0.4);border-radius:50%;
+  transform:translate(-50%,-50%) rotateX(70deg);
+  box-shadow:0 0 10px rgba(240,200,140,0.2);pointer-events:none;
+  transition:all var(--transition-mid);
+}
+.act2-planet.unlocked .act2-planet-dot.theme-ringed::before{
+  border-color:rgba(250,220,160,0.6);box-shadow:0 0 16px rgba(240,200,140,0.35);
+}
+
+/* 星球标签与连接器 */
+.act2-planet-label{font-size:0.75rem;color:var(--text-dim);margin:0 12px;letter-spacing:0.08em;transition:color var(--transition-mid)}
+.act2-planet.unlocked .act2-planet-label{color:var(--text-secondary)}
+.act2-planet-connector{width:30px;height:1px;background:rgba(180,160,220,0.2);transition:background var(--transition-mid)}
+.act2-planet.unlocked .act2-planet-connector{background:rgba(200,180,240,0.5)}
+
+/* 解锁粒子爆发叠加层 */
+.act2-planet-unlock-fx{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:3;width:0;height:0;border-radius:50%;opacity:0}
+.act2-planet-unlock-fx.burst{animation:unlockBurstRing 0.8s ease-out forwards}
+@keyframes unlockBurstRing{0%{width:0;height:0;opacity:1;box-shadow:0 0 20px rgba(255,220,160,0.6)}60%{width:120px;height:120px;opacity:0.5}100%{width:180px;height:180px;opacity:0;box-shadow:0 0 60px rgba(255,220,160,0)}}
+
+/* Transition text */
+.act2-final-text{position:fixed;bottom:25%;left:50%;transform:translateX(-50%);width:80%;max-width:320px;text-align:center;font-size:1rem;color:var(--gold-light);letter-spacing:0.12em;line-height:1.8;z-index:15;opacity:0;transition:opacity 1s;text-shadow:0 0 20px rgba(232,201,122,0.4);pointer-events:none}
+.act2-final-text.show{opacity:1}
+
+/* ============================================================
+   Memory Card & Quiz Overlay
+   ============================================================ */
+.overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:30;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity var(--transition-mid)}
+.overlay.show{opacity:1;pointer-events:auto}
+.overlay-bg{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(5,3,15,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.overlay-card{position:relative;width:85%;max-width:340px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:28px 24px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 8px 40px rgba(0,0,0,0.4),0 0 60px rgba(160,140,220,0.1);animation:cardIn 0.5s cubic-bezier(0.16,1,0.3,1) forwards}
+@keyframes cardIn{from{transform:translateY(30px) scale(0.92);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+.overlay-card-img{width:100%;height:180px;border-radius:var(--radius-md);object-fit:cover;background:rgba(30,20,50,0.5);margin-bottom:20px;border:1px solid rgba(180,160,220,0.1)}
+.overlay-card-text{font-size:1rem;color:var(--text-primary);text-align:center;line-height:1.8;letter-spacing:0.06em}
+.overlay-card-close{margin-top:20px;padding:10px 32px;background:rgba(180,160,220,0.15);border:1px solid rgba(180,160,220,0.25);border-radius:20px;color:var(--text-secondary);font-size:0.9rem;cursor:pointer;transition:all var(--transition-fast);letter-spacing:0.08em}
+.overlay-card-close:active{background:rgba(180,160,220,0.3);transform:scale(0.96)}
+
+/* Quiz */
+.quiz-question{font-size:1.05rem;color:var(--text-primary);text-align:center;margin-bottom:24px;line-height:1.6;letter-spacing:0.06em}
+.quiz-options{display:flex;flex-direction:column;gap:12px}
+.quiz-option{padding:14px 20px;background:rgba(180,160,220,0.08);border:1px solid rgba(180,160,220,0.15);border-radius:var(--radius-md);color:var(--text-secondary);font-size:0.95rem;text-align:center;cursor:pointer;transition:all var(--transition-fast);letter-spacing:0.05em}
+.quiz-option:active{background:rgba(180,160,220,0.2);border-color:rgba(200,180,240,0.4)}
+.quiz-option.correct{background:rgba(140,200,140,0.2);border-color:rgba(140,200,140,0.5);color:#c0f0c0}
+.quiz-option.wrong{animation:shake 0.5s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.quiz-hint{text-align:center;margin-top:16px;font-size:0.85rem;color:var(--rose-light);opacity:0;transition:opacity var(--transition-fast)}
+.quiz-hint.show{opacity:1}
+
+/* ============================================================
+   Act 3: 心跳谜题
+   ============================================================ */
+#act3{z-index:10}
+/* ---- 心形图标（纯CSS心形） ---- */
+.act3-heart{width:120px;height:110px;position:relative;cursor:pointer;margin-bottom:2rem;transition:transform 0.1s;margin-left:auto;margin-right:auto}
+.act3-heart-core{width:100%;height:100%;position:relative}
+.act3-heart-shape{position:relative;width:120px;height:110px;animation:heartBeat 0.8s ease-in-out infinite}
+.act3-heart-shape::before,.act3-heart-shape::after{content:'';position:absolute;width:60px;height:96px;border-radius:60px 60px 0 0;background:radial-gradient(ellipse at 40% 35%,#ffb0c8,#e87090 40%,#c04060 70%,#802040 100%);box-shadow:0 -8px 30px rgba(240,120,160,0.4)}
+.act3-heart-shape::before{left:60px;transform:rotate(-45deg);transform-origin:0 100%}
+.act3-heart-shape::after{left:0;transform:rotate(45deg);transform-origin:100% 100%}
+@keyframes heartBeat{0%,100%{transform:scale(1)}14%{transform:scale(1.18)}28%{transform:scale(1)}42%{transform:scale(1.18)}56%{transform:scale(1)}}
+.act3-heart-glow{position:absolute;top:-10px;left:-10px;width:140px;height:130px;background:radial-gradient(circle,rgba(240,140,170,0.25),transparent 70%);animation:heartGlow 0.8s ease-in-out infinite;pointer-events:none}
+@keyframes heartGlow{0%,100%{opacity:0.4;transform:scale(1)}14%{opacity:0.7;transform:scale(1.12)}28%{opacity:0.4;transform:scale(1)}42%{opacity:0.7;transform:scale(1.12)}56%{opacity:0.4;transform:scale(1)}}
+.act3-subtitle{font-size:1rem;color:var(--rose-light);text-align:center;letter-spacing:0.1em;margin-bottom:1.5rem;text-shadow:0 0 20px rgba(220,160,180,0.3)}
+.act3-match{font-size:3.5rem;font-weight:200;color:var(--gold-light);text-align:center;letter-spacing:0.08em;margin-bottom:0.5rem;text-shadow:0 0 30px rgba(232,201,122,0.4);transition:color var(--transition-fast)}
+.act3-match-label{font-size:0.8rem;color:var(--text-dim);text-align:center;letter-spacing:0.1em}
+.act3-tap-hint{font-size:0.85rem;color:var(--text-dim);text-align:center;margin-top:2rem;letter-spacing:0.08em;animation:pulseHint 2s ease-in-out infinite}
+@keyframes pulseHint{0%,100%{opacity:0.5}50%{opacity:1}}
+.act3-result{position:fixed;top:0;left:0;width:100%;height:100%;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 1s}
+.act3-result.show{opacity:1;pointer-events:auto}
+.act3-result-name{font-size:1.8rem;color:var(--gold);text-align:center;letter-spacing:0.15em;text-shadow:0 0 30px rgba(232,201,122,0.5);margin-top:1rem;animation:fadeInUp 1s 0.5s both}
+.act3-result-text{font-size:0.95rem;color:var(--rose-light);text-align:center;line-height:1.8;letter-spacing:0.08em;margin-top:1.5rem;animation:fadeInUp 1s 1s both;text-shadow:0 0 15px rgba(200,160,180,0.3)}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* 爱情热词 — 词云样式（散落布局） */
+.act3-keywords{position:fixed;top:0;left:0;width:100%;height:100%;z-index:15;opacity:0;pointer-events:none;transition:opacity 0.8s}
+.act3-keywords.show{opacity:1;pointer-events:auto}
+.act3-keyword{position:absolute;font-size:1.3rem;color:var(--gold-light);background:rgba(40,20,60,0.75);border:1px solid rgba(232,201,122,0.3);border-radius:20px;padding:10px 20px;cursor:pointer;text-shadow:0 0 15px rgba(232,201,122,0.3);user-select:none;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);transition:transform 0.2s,box-shadow 0.2s;opacity:0;transform:scale(0.5);animation:keywordAppear 0.6s cubic-bezier(0.16,1,0.3,1) forwards}
+.act3-keyword.show{opacity:1;transform:scale(1)}
+.act3-keyword:active{transform:scale(0.92) !important;background:rgba(232,201,122,0.2)}
+@keyframes keywordAppear{0%{opacity:0;transform:scale(0.3) rotate(-10deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}
+.act3-keyword.flying{position:fixed;z-index:20;animation:flyToStar 1.2s ease-in forwards;pointer-events:none}
+@keyframes flyToStar{0%{transform:scale(1);opacity:1;filter:brightness(1)}30%{transform:scale(1.5);opacity:1;filter:brightness(1.8)}100%{transform:scale(0.1) translate(var(--fly-x,0),var(--fly-y,-300px));opacity:0;filter:brightness(2.5)}}
+/* 热词炸裂粒子 */
+.keyword-burst-particle{position:fixed;pointer-events:none;z-index:25;border-radius:50%;animation:burstParticle 0.8s ease-out forwards}
+@keyframes burstParticle{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--bx,0),var(--by,0)) scale(0)}}
+
+/* 代码雨 Canvas */
+#codeRainCanvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none;opacity:0;transition:opacity 1.5s}
+#codeRainCanvas.show{opacity:0.35}
+
+/* ============================================================
+   Act 4: 告白揭晓
+   ============================================================ */
+#act4{z-index:10}
+.act4-container{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;padding:40px 20px 100px;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative}
+.act4-container::-webkit-scrollbar{display:none}
+/* 告白文字渐变遮罩 */
+.act4-fade-top,.act4-fade-bottom{position:fixed;left:0;width:100%;height:80px;z-index:12;pointer-events:none;opacity:0;transition:opacity 0.8s}
+.act4-fade-top{top:0;background:linear-gradient(to bottom,rgba(10,10,26,1),rgba(10,10,26,0));height:120px}
+.act4-fade-bottom{bottom:0;background:linear-gradient(to top,rgba(10,10,26,1),rgba(10,10,26,0));height:120px}
+.act4-fade-top.show,.act4-fade-bottom.show{opacity:1}
+.act4-swipe-hint{font-size:0.8rem;color:var(--text-dim);text-align:center;letter-spacing:0.1em;margin-bottom:2rem;animation:pulseHint 2s ease-in-out infinite}
+.act4-confession{width:100%;max-width:340px;display:flex;flex-direction:column;gap:20px;padding:20px 0}
+.act4-line{font-size:1.05rem;color:var(--text-secondary);line-height:2;letter-spacing:0.08em;text-align:center;opacity:0;transform:translateY(20px);transition:opacity 0.8s,transform 0.8s}
+.act4-line.visible{opacity:1;transform:translateY(0)}
+.act4-line.highlight{font-size:1.2rem;color:var(--gold-light);text-shadow:0 0 20px rgba(232,201,122,0.3)}
+.act4-buttons{position:fixed;bottom:0;left:0;width:100%;display:flex;gap:16px;padding:20px 24px 40px;justify-content:center;z-index:15;opacity:0;pointer-events:none;transition:opacity 0.8s 0.5s;background:linear-gradient(to top,rgba(10,10,26,0.95),transparent)}
+.act4-buttons.show{opacity:1;pointer-events:auto}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 36px;border-radius:28px;font-size:1rem;letter-spacing:0.08em;cursor:pointer;transition:all var(--transition-fast);border:none;outline:none;font-family:inherit;position:relative;overflow:hidden;min-width:120px}
+.btn-primary{background:linear-gradient(135deg,rgba(232,201,122,0.3),rgba(200,160,100,0.2));border:1px solid rgba(232,201,122,0.4);color:var(--gold-light);box-shadow:0 0 20px rgba(232,201,122,0.15)}
+.btn-primary:active{background:linear-gradient(135deg,rgba(232,201,122,0.5),rgba(200,160,100,0.35));transform:scale(0.96);box-shadow:0 0 30px rgba(232,201,122,0.3)}
+.btn-secondary{background:rgba(180,160,220,0.12);border:1px solid rgba(180,160,220,0.25);color:var(--text-secondary)}
+.btn-secondary:active{background:rgba(180,160,220,0.25);transform:scale(0.96)}
+.btn-ghost{padding:10px 24px;background:transparent;border:1px solid rgba(180,160,220,0.2);color:var(--text-dim);border-radius:20px;font-size:0.85rem}
+.btn-ghost:active{background:rgba(180,160,220,0.12);color:var(--text-secondary)}
+
+/* ============================================================
+   Act 5: 回应
+   ============================================================ */
+#act5{z-index:10}
+.act5-fireworks-container{position:fixed;top:0;left:0;width:100%;height:100%;z-index:6;pointer-events:none}
+.act5-card{position:relative;width:85%;max-width:340px;background:var(--glass-bg);border:2px solid rgba(232,201,122,0.3);border-radius:var(--radius-lg);padding:32px 24px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 0 60px rgba(232,201,122,0.15),0 0 120px rgba(180,140,200,0.08);animation:fadeInUp 0.8s both;text-align:center}
+.act5-card-title{font-size:0.85rem;color:var(--gold);letter-spacing:0.15em;margin-bottom:8px;text-transform:uppercase}
+.act5-card-star{font-size:2.5rem;margin:16px 0}
+.act5-card-names{font-size:1.3rem;color:var(--gold-light);letter-spacing:0.12em;margin-bottom:4px}
+.act5-card-date{font-size:0.8rem;color:var(--text-dim);letter-spacing:0.08em;margin-bottom:16px}
+.act5-card-divider{width:60%;height:1px;background:linear-gradient(to right,transparent,rgba(232,201,122,0.4),transparent);margin:16px auto}
+.act5-card-footer{font-size:0.75rem;color:var(--text-dim);letter-spacing:0.06em}
+.act5-card-save-hint{font-size:0.7rem;color:var(--text-dim);margin-top:20px;letter-spacing:0.06em;animation:pulseHint 2s ease-in-out infinite}
+
+/* Think overlay */
+.act5-think-overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:25;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity var(--transition-mid)}
+.act5-think-overlay.show{opacity:1;pointer-events:auto}
+.act5-think-card{position:relative;width:85%;max-width:340px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:32px 24px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 8px 40px rgba(0,0,0,0.4);text-align:center;animation:cardIn 0.5s cubic-bezier(0.16,1,0.3,1) forwards}
+.act5-think-text{font-size:1.05rem;color:var(--text-primary);line-height:1.8;letter-spacing:0.08em;margin-bottom:24px}
+.act5-think-buttons{display:flex;flex-direction:column;gap:12px;align-items:center}
+
+/* Message input */
+.act5-msg-overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:25;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity var(--transition-mid)}
+.act5-msg-overlay.show{opacity:1;pointer-events:auto}
+.act5-msg-card{position:relative;width:88%;max-width:360px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:28px 20px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 8px 40px rgba(0,0,0,0.4);animation:cardIn 0.5s cubic-bezier(0.16,1,0.3,1) forwards}
+.act5-msg-title{font-size:1rem;color:var(--text-primary);text-align:center;letter-spacing:0.08em;margin-bottom:20px}
+.act5-msg-textarea{width:100%;height:140px;background:rgba(20,15,40,0.5);border:1px solid rgba(180,160,220,0.2);border-radius:var(--radius-md);padding:16px;color:var(--text-primary);font-size:0.95rem;line-height:1.6;resize:none;outline:none;font-family:inherit;letter-spacing:0.05em;transition:border-color var(--transition-fast)}
+.act5-msg-textarea:focus{border-color:rgba(200,180,240,0.5);box-shadow:0 0 20px rgba(160,140,200,0.1)}
+.act5-msg-textarea::placeholder{color:var(--text-dim)}
+.act5-msg-count{text-align:right;font-size:0.75rem;color:var(--text-dim);margin-top:8px;margin-bottom:16px}
+.act5-msg-submit{width:100%;padding:14px;background:linear-gradient(135deg,rgba(180,160,220,0.2),rgba(140,120,180,0.15));border:1px solid rgba(180,160,220,0.3);border-radius:28px;color:var(--text-primary);font-size:1rem;cursor:pointer;letter-spacing:0.08em;transition:all var(--transition-fast);font-family:inherit}
+.act5-msg-submit:active{background:linear-gradient(135deg,rgba(180,160,220,0.35),rgba(140,120,180,0.25));transform:scale(0.97)}
+.act5-msg-submit:disabled{opacity:0.4;pointer-events:none}
+
+/* Feedback */
+.act5-feedback{position:fixed;top:0;left:0;width:100%;height:100%;z-index:25;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity var(--transition-mid)}
+.act5-feedback.show{opacity:1;pointer-events:auto}
+.act5-feedback-card{position:relative;width:80%;max-width:300px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:32px 24px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);text-align:center;animation:cardIn 0.5s cubic-bezier(0.16,1,0.3,1) forwards}
+.act5-feedback-emoji{font-size:2.5rem;margin-bottom:16px}
+.act5-feedback-text{font-size:1rem;color:var(--text-primary);line-height:1.8;letter-spacing:0.08em;margin-bottom:20px}
+
+/* Toast */
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:60;padding:12px 28px;background:rgba(30,20,50,0.9);border:1px solid rgba(200,180,240,0.2);border-radius:24px;color:var(--text-secondary);font-size:0.9rem;letter-spacing:0.06em;opacity:0;pointer-events:none;transition:opacity var(--transition-fast);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.toast.show{opacity:1}
+
+/* Audio toggle */
+.audio-toggle{position:fixed;top:20px;right:20px;z-index:40;width:44px;height:44px;border-radius:50%;background:rgba(20,15,40,0.7);border:1.5px solid rgba(232,201,122,0.35);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:all var(--transition-fast);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 0 15px rgba(232,201,122,0.15)}
+.audio-toggle:active{background:rgba(40,30,80,0.8);border-color:rgba(232,201,122,0.6);transform:scale(0.92)}
+
+/* Touch trail */
+.touch-trail{position:fixed;width:6px;height:6px;border-radius:50%;pointer-events:none;z-index:45;background:radial-gradient(circle,rgba(255,255,240,0.8),transparent);box-shadow:0 0 8px rgba(200,180,240,0.5);animation:trailFade 0.8s ease-out forwards}
+@keyframes trailFade{to{opacity:0;transform:scale(0)}}
+
+/* Responsive */
+@media(min-width:768px){
+  .act5-card,.act5-think-card,.act5-msg-card,.overlay-card{max-width:400px}
+  .act2-planet{max-width:400px}
+  .act4-confession{max-width:420px}
+}
+
+/* PC fallback hint */
+.pc-hint{display:none}
+@media(min-width:1024px) and (hover:hover){
+  .pc-hint{display:block;position:fixed;bottom:30px;left:50%;transform:translateX(-50%);z-index:50;padding:10px 20px;background:rgba(20,15,40,0.8);border:1px solid rgba(180,160,220,0.2);border-radius:20px;color:var(--text-dim);font-size:0.75rem;letter-spacing:0.06em;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<!-- Canvas Layers -->
+<canvas id="bgCanvas"></canvas>
+<canvas id="fxCanvas"></canvas>
+<canvas id="codeRainCanvas"></canvas>
+
+<!-- Camera Zoom -->
+<div class="camera-zoom" id="cameraZoom"></div>
+
+<!-- Audio Toggle -->
+<button class="audio-toggle" id="audioToggle" title="音效开关">�</button>
+
+<!-- PC Hint -->
+<div class="pc-hint">📱 请在手机端打开以获得完整体验</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Main App -->
+<div id="app">
+
+  <!-- ===== Act 1: 星空入口 ===== -->
+  <div class="act active" id="act1">
+    <p class="act1-guide">有一片星空，想和你一起看看</p>
+    <div class="act1-star" id="act1Star"></div>
+    <div class="act1-progress" id="act1Progress">
+      <div class="act1-progress-ring" id="act1ProgressRing"></div>
+    </div>
+    <p class="act1-hint">长按主星 · 开启旅程</p>
+  </div>
+
+  <!-- ===== Act 2: 星轨回忆 ===== -->
+  <div class="act" id="act2">
+    <div class="act2-container" id="act2Container">
+      <div class="act2-trail" id="act2Trail">
+        <div class="act2-trail-line"></div>
+        <div class="act2-trail-glow" id="act2TrailGlow"></div>
+        <!-- Planets injected by JS -->
+      </div>
+    </div>
+    <div class="act2-final-text" id="act2FinalText">这些细碎的瞬间，拼成了喜欢你的理由</div>
+  </div>
+
+  <!-- ===== Act 3: 心跳谜题 ===== -->
+  <div class="act" id="act3">
+    <p class="act3-subtitle">测测我们的心跳能不能同频？</p>
+    <div class="act3-heart" id="act3Heart">
+      <div class="act3-heart-glow"></div>
+      <div class="act3-heart-core">
+        <div class="act3-heart-shape"></div>
+      </div>
+    </div>
+    <div class="act3-match" id="act3Match">0%</div>
+    <div class="act3-match-label">心跳匹配度</div>
+    <p class="act3-tap-hint" id="act3TapHint">👆 跟随心跳节奏点击</p>
+    <div class="act3-result" id="act3Result">
+      <div class="act3-result-name" id="act3ResultName"></div>
+      <p class="act3-result-text">早在遇见你的第一天，我的心跳就已经对准了你</p>
+    </div>
+    <div class="act3-keywords" id="act3Keywords"></div>
+  </div>
+
+  <!-- ===== Act 4: 告白揭晓 ===== -->
+  <div class="act" id="act4">
+    <div class="act4-fade-top" id="act4FadeTop"></div>
+    <div class="act4-container" id="act4Container">
+      <p class="act4-swipe-hint" id="act4SwipeHint">↑ 向上滑动 · 阅读来信</p>
+      <div class="act4-confession" id="act4Confession">
+        <!-- Lines injected by JS -->
+      </div>
+    </div>
+    <div class="act4-fade-bottom" id="act4FadeBottom"></div>
+    <div class="act4-buttons" id="act4Buttons">
+      <button class="btn btn-primary" id="btnAgree">我愿意</button>
+      <button class="btn btn-secondary" id="btnThink">让我再想想</button>
+    </div>
+  </div>
+
+  <!-- ===== Act 5: 回应 ===== -->
+  <div class="act" id="act5">
+    <div class="act5-fireworks-container" id="act5Fireworks"></div>
+    <!-- Commemorative card (branch 1) -->
+    <div class="act5-card" id="act5Card" style="display:none">
+      <div class="act5-card-title">✦ 星际缔约纪念卡 ✦</div>
+      <div class="act5-card-star">🌟</div>
+      <div class="act5-card-names" id="act5CardNames"></div>
+      <div class="act5-card-divider"></div>
+      <div class="act5-card-date" id="act5CardDate"></div>
+      <div class="act5-card-footer">星空见证 · 此刻永恒</div>
+      <p class="act5-card-save-hint">长按屏幕截图保存纪念卡</p>
+    </div>
+  </div>
+
+  <!-- Think overlay -->
+  <div class="act5-think-overlay" id="thinkOverlay">
+    <div class="act5-think-card">
+      <p class="act5-think-text">没关系，星空永远为你亮着，我也是</p>
+      <div class="act5-think-buttons">
+        <button class="btn btn-primary" id="btnReplay">再看一遍</button>
+        <button class="btn btn-ghost" id="btnWriteMsg">写句话给 TA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Message input overlay -->
+  <div class="act5-msg-overlay" id="msgOverlay">
+    <div class="act5-msg-card">
+      <p class="act5-msg-title">💫 把你想说的话，传送到我的星空</p>
+      <textarea class="act5-msg-textarea" id="msgTextarea" placeholder="写下你想对我说的话吧～" maxlength="200"></textarea>
+      <div class="act5-msg-count"><span id="msgCount">0</span>/200</div>
+      <button class="act5-msg-submit" id="btnMsgSubmit">送出心意</button>
+    </div>
+  </div>
+
+  <!-- Feedback overlay -->
+  <div class="act5-feedback" id="feedbackOverlay">
+    <div class="act5-feedback-card">
+      <div class="act5-feedback-emoji">✨</div>
+      <p class="act5-feedback-text">心意已经帮你收好啦✨</p>
+      <button class="btn btn-ghost" id="btnBackHome">返回首页</button>
+    </div>
+  </div>
+
+  <!-- Memory card overlay -->
+  <div class="overlay" id="memoryOverlay">
+    <div class="overlay-bg"></div>
+    <div class="overlay-card">
+      <img class="overlay-card-img" id="memoryImg" src="" alt="回忆">
+      <p class="overlay-card-text" id="memoryText"></p>
+      <div style="text-align:center">
+        <button class="overlay-card-close" id="memoryClose">收起回忆 ✦</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quiz overlay -->
+  <div class="overlay" id="quizOverlay">
+    <div class="overlay-bg"></div>
+    <div class="overlay-card">
+      <p class="quiz-question" id="quizQuestion"></p>
+      <div class="quiz-options" id="quizOptions"></div>
+      <p class="quiz-hint" id="quizHint">再想想呀～</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   星轨漫游・告白企划 — 配置区
+   所有可定制内容集中在此，修改即可替换为专属内容
+   ============================================================ */
+const CONFIG = {
+  // ---- 短信配置 ----
+  sms: {
+    phoneNumber: '13800138000',           // 收件人手机号（统一配置，两条路径共用）
+    agreeMessage: '我愿意和你一起走完所有星轨，往后的星空都和你一起看。', // 「我愿意」预设短信文案
+  },
+
+  // ---- 双方信息 ----
+  names: {
+    sender: '小明',                        // 告白者姓名
+    receiver: '小红',                      // 接收者姓名
+  },
+
+  // ---- 回忆素材（5个节点，交替安排回忆与默契题）----
+  // type: 'memory' 为回忆卡片，'quiz' 为默契题
+  // theme: 'crystal' | 'nebula' | 'lava' | 'ice' | 'stardust' | 'ringed'
+  //   六种星球主题，分别对应不同的视觉风格与轨道粒子效果
+  planets: [
+    {
+      type: 'memory',
+      theme: 'crystal',    // 水晶星球：蓝紫半透明、棱形辉光
+      label: '初见',
+      image: 'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=400&h=300&fit=crop',
+      text: '那天你笑的时候，我偷偷记了很久',
+      side: 'left',
+    },
+    {
+      type: 'memory',
+      theme: 'nebula',     // 星云星球：旋转气体、极光环带
+      label: '心动',
+      image: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=400&h=300&fit=crop',
+      text: '你认真看书的样子，安静得像一幅画',
+      side: 'right',
+    },
+    {
+      type: 'quiz',
+      theme: 'lava',       // 熔岩星球：暖金流动、火星升腾
+      label: '默契',
+      side: 'left',
+      question: '我最喜欢你的哪个瞬间？',
+      options: ['你笑起来的时候', '你认真做事的侧脸', '你吃东西鼓鼓的腮帮子', '你看着我的眼睛时'],
+      correct: 0,
+    },
+    {
+      type: 'memory',
+      theme: 'ice',        // 冰霜星球：冷白蓝调、冰晶飘散
+      label: '温暖',
+      image: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=400&h=300&fit=crop',
+      text: '下雨天一起躲过的屋檐，是我最想回去的地方',
+      side: 'right',
+    },
+    {
+      type: 'quiz',
+      theme: 'stardust',   // 星尘星球：粉紫闪烁、星尘环绕
+      label: '约定',
+      side: 'left',
+      question: '如果用一个词形容我们的关系，你觉得是？',
+      options: ['朋友', '知己', '未完成的诗', '命中注定'],
+      correct: 3,
+    },
+  ],
+
+  // ---- 告白长文（逐行展示，最后一行是正式的告白问句）----
+  confession: [
+    '从第一次见到你，',
+    '我的世界就像被投入了一颗小小的星，',
+    '从此有了光。',
+    '你或许不知道，',
+    '每次和你聊天时，我都在屏幕这边偷偷地笑；',
+    '每次和你并肩走，我都希望路可以再长一点；',
+    '那些不经意的瞬间，',
+    '那些你随口说的小事，',
+    '我都悄悄地，记在了心里。',
+    '所以，我想正式地问你——',
+    '你愿意，做我宇宙里的唯一坐标吗？',
+  ],
+
+  // ---- 音频配置（留空则使用内置合成音效）----
+  audio: {
+    bgm: './有人 - 赵钶.mp3',           // 背景音乐 URL（mp3/ogg），留空则静音
+    voice: './我愿意.mp3',         // 告白语音 URL（mp3/ogg），在「我愿意」时播放
+  },
+
+  // ---- 视觉配置 ----
+  // 星星分为四层深度，模拟真实星空的远近层次感
+  // 每层可独立配置：数量、半径范围、亮度范围、闪烁频率、闪烁深度、星闪概率
+  visual: {
+    stars: {
+      // 远层：大量微小暗星，缓慢微弱闪烁，营造深邃背景
+      far: {
+        count: 130,          // 星星数量
+        minRadius: 0.3,      // 最小半径
+        maxRadius: 0.8,      // 最大半径
+        minAlpha: 0.12,      // 基础最低透明度
+        maxAlpha: 0.45,      // 基础最高透明度
+        freqBase: 0.005,     // 闪烁基频（值越小闪烁越慢）
+        freqRange: 0.008,    // 闪烁频率随机范围
+        twinkleDepth: 0.12,  // 闪烁幅度（亮度波动范围）
+        sparkleChance: 0.001,// 每帧星闪概率（0~1，偶尔出现短暂高亮）
+      },
+      // 中层：中等亮星，适度闪烁，构成星空主体
+      mid: {
+        count: 55,
+        minRadius: 0.7,
+        maxRadius: 1.6,
+        minAlpha: 0.2,
+        maxAlpha: 0.65,
+        freqBase: 0.008,
+        freqRange: 0.02,
+        twinkleDepth: 0.25,
+        sparkleChance: 0.003,
+      },
+      // 近层：大而亮的星，明显闪烁 + 柔和辉光
+      near: {
+        count: 18,
+        minRadius: 1.4,
+        maxRadius: 2.8,
+        minAlpha: 0.3,
+        maxAlpha: 0.85,
+        freqBase: 0.015,
+        freqRange: 0.035,
+        twinkleDepth: 0.35,
+        sparkleChance: 0.006,
+      },
+      // 亮星层：极少数大星，戏剧性闪烁 + 强辉光，视觉焦点
+      bright: {
+        count: 6,
+        minRadius: 2.0,
+        maxRadius: 3.5,
+        minAlpha: 0.45,
+        maxAlpha: 1.0,
+        freqBase: 0.02,
+        freqRange: 0.05,
+        twinkleDepth: 0.45,
+        sparkleChance: 0.01,
+      },
+    },
+    nebulaCount: 3,          // 星云数量
+    nebulaOpacity: 0.12,     // 星云透明度
+    twinkleIntensity: 1.0,   // 全局闪烁强度倍率（0=不闪，1=默认，>1=增强）
+    trailParticleCount: 40,  // 星轨粒子数量
+  },
+};
+
+/* ============================================================
+   工具函数
+   ============================================================ */
+const $ = (sel, ctx) => (ctx || document).querySelector(sel);
+const $$ = (sel, ctx) => [...(ctx || document).querySelectorAll(sel)];
+
+// 移动端检测
+function isMobile() {
+  return /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) ||
+         ('ontouchstart' in window && window.innerWidth < 1024);
+}
+function isIOS() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+// 安全过滤（移除可能导致短信协议失效的特殊字符）
+function sanitizeSMS(text) {
+  return text.replace(/[\n\r]+/g, ' ').replace(/[&?=#]/g, '').trim();
+}
+
+// 短信唤起
+function openSMS(phone, message) {
+  if (!isMobile()) {
+    showToast('📱 请在手机端打开以发送短信回应');
+    return false;
+  }
+  const body = encodeURIComponent(sanitizeSMS(message));
+  const url = isIOS()
+    ? `sms:${phone}&body=${body}`
+    : `sms:${phone}?body=${body}`;
+  window.location.href = url;
+  return true;
+}
+
+// 本地存储
+const Storage = {
+  key: 'starTrackData',
+  get() {
+    try { return JSON.parse(localStorage.getItem(this.key) || '{}'); } catch { return {}; }
+  },
+  set(obj) {
+    try {
+      const data = { ...this.get(), ...obj };
+      localStorage.setItem(this.key, JSON.stringify(data));
+    } catch {}
+  },
+};
+
+// Toast
+let toastTimer;
+function showToast(msg, duration = 2000) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), duration);
+}
+
+/* ============================================================
+   音频引擎（Web Audio API 合成音效，兼容无外部音频文件）
+   ============================================================ */
+class AudioEngine {
+  constructor() {
+    this.ctx = null;
+    this.muted = false;
+    this.bgmGain = null;
+    this.bgmSource = null;
+    this.bgmAudio = null;
+    this._init();
+  }
+
+  _init() {
+    try {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.bgmGain = this.ctx.createGain();
+      this.bgmGain.gain.value = 0.08;
+      this.bgmGain.connect(this.ctx.destination);
+    } catch { /* 音频不可用 */ }
+  }
+
+  resume() {
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  }
+
+  toggle() {
+    this.muted = !this.muted;
+    if (this.bgmGain) this.bgmGain.gain.value = this.muted ? 0 : 0.08;
+    if (this.bgmAudio) {
+      if (this.muted) this.bgmAudio.pause();
+      else this.bgmAudio.play().catch(() => {});
+    }
+    return this.muted;
+  }
+
+  // 播放外部 BGM
+  playBGM(url) {
+    if (!url || this.muted) return;
+    this.resume();
+    if (this.bgmAudio) { this.bgmAudio.pause(); this.bgmAudio = null; }
+    try {
+      this.bgmAudio = new Audio(url);
+      this.bgmAudio.loop = true;
+      this.bgmAudio.volume = 0.15;
+      this.bgmAudio.play().catch(() => {});
+    } catch {}
+  }
+
+  // 播放外部语音
+  playVoice(url) {
+    if (!url || this.muted) return;
+    this.resume();
+    try {
+      const a = new Audio(url);
+      a.volume = 0.7;
+      a.play().catch(() => {});
+    } catch {}
+  }
+
+  // 合成音效：水晶叮咚
+  playCrystal() {
+    if (this.muted || !this.ctx) return;
+    this.resume();
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1200, t);
+    osc.frequency.exponentialRampToValueAtTime(1800, t + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(1600, t + 0.2);
+    gain.gain.setValueAtTime(0.15, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.4);
+  }
+
+  // 合成音效：心跳鼓点
+  playHeartbeat() {
+    if (this.muted || !this.ctx) return;
+    this.resume();
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(60, t);
+    gain.gain.setValueAtTime(0.3, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.15);
+  }
+
+  // 合成音效：烟花
+  playFirework() {
+    if (this.muted || !this.ctx) return;
+    this.resume();
+    const t = this.ctx.currentTime;
+    // 噪声爆发
+    const bufferSize = this.ctx.sampleRate * 0.3;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    noise.connect(gain);
+    gain.connect(this.ctx.destination);
+    noise.start(t);
+  }
+
+  // 合成音效：星尘轻响
+  playStardust() {
+    if (this.muted || !this.ctx) return;
+    this.resume();
+    const t = this.ctx.currentTime;
+    for (let i = 0; i < 5; i++) {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800 + Math.random() * 600, t + i * 0.04);
+      gain.gain.setValueAtTime(0.06, t + i * 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.04 + 0.3);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t + i * 0.04);
+      osc.stop(t + i * 0.04 + 0.3);
+    }
+  }
+}
+
+/* ============================================================
+   Canvas 星空渲染引擎
+   ============================================================ */
+class Starfield {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.stars = [];          // 扁平化星星数组（按层排序）
+    this.nebulae = [];
+    this.w = 0;
+    this.h = 0;
+    this.time = 0;
+    this.running = true;
+    this._resize();
+    this._initStars();
+    this._initNebulae();
+    this._loop();
+    window.addEventListener('resize', () => this._resize());
+  }
+
+  _resize() {
+    this.w = this.canvas.width = window.innerWidth;
+    this.h = this.canvas.height = window.innerHeight;
+  }
+
+  /* ----------------------------------------------------------
+     星星生成：四层深度，每层独立参数
+     每颗星星具备 2~3 个不同频率的正弦分量，
+     叠加后产生自然不规则闪烁，模拟真实星空湍流大气效果
+     ---------------------------------------------------------- */
+  _initStars() {
+    const cfg = CONFIG.visual.stars;
+    const intensity = CONFIG.visual.twinkleIntensity;
+    const layers = ['far', 'mid', 'near', 'bright'];
+    this.stars = [];
+
+    layers.forEach(layer => {
+      const L = cfg[layer];
+      for (let i = 0; i < L.count; i++) {
+        // 半径和基础透明度在配置范围内随机
+        const r = L.minRadius + Math.random() * (L.maxRadius - L.minRadius);
+        const baseAlpha = L.minAlpha + Math.random() * (L.maxAlpha - L.minAlpha);
+
+        // 生成 2~3 个频率分量，模拟多频段大气闪烁
+        const compCount = 2 + Math.floor(Math.random() * 2); // 2 or 3
+        const freqs = [];
+        const phases = [];
+        const amps = [];
+        let ampSum = 0;
+        for (let c = 0; c < compCount; c++) {
+          const f = L.freqBase + Math.random() * L.freqRange;
+          freqs.push(f);
+          phases.push(Math.random() * Math.PI * 2);
+          // 振幅递减：第一个分量主导，后续分量递减
+          const a = (c === 0 ? 1.0 : 0.3 + Math.random() * 0.4) / compCount;
+          amps.push(a);
+          ampSum += a;
+        }
+        // 归一化振幅，使总幅度不超过 twinkleDepth
+        const normFactor = L.twinkleDepth * intensity / ampSum;
+        for (let c = 0; c < compCount; c++) amps[c] *= normFactor;
+
+        // 色相：暖金到冷白之间随机分布
+        const hue = 25 + Math.random() * 40;
+
+        this.stars.push({
+          layer,
+          x: Math.random() * this.w,
+          y: Math.random() * this.h,
+          r,
+          baseAlpha,
+          hue,
+          freqs,
+          phases,
+          amps,
+          // 星闪（sparkle）状态
+          sparkleChance: L.sparkleChance,
+          sparkleTimer: Math.random() * 3,     // 随机初始冷却
+          sparkleProgress: 0,
+          sparkleActive: false,
+          sparklePeak: 0.3 + Math.random() * 0.5, // 星闪峰值亮度增量
+        });
+      }
+    });
+
+    // 按层排序（远→中→近→亮），确保绘制顺序正确
+    const layerOrder = { far: 0, mid: 1, near: 2, bright: 3 };
+    this.stars.sort((a, b) => layerOrder[a.layer] - layerOrder[b.layer]);
+  }
+
+  _initNebulae() {
+    const nCount = CONFIG.visual.nebulaCount;
+    this.nebulae = [];
+    for (let i = 0; i < nCount; i++) {
+      this.nebulae.push({
+        x: Math.random() * (this.w || window.innerWidth),
+        y: Math.random() * (this.h || window.innerHeight),
+        r: 150 + Math.random() * 200,
+        dx: (Math.random() - 0.5) * 0.2,
+        dy: (Math.random() - 0.5) * 0.15,
+        hue: [260, 300, 30, 280, 320][i % 5],
+        alpha: 0.03 + Math.random() * 0.05,
+      });
+    }
+  }
+
+  /* ----------------------------------------------------------
+     主循环：使用 rAF 驱动，dt 固定为 16ms 近似值
+     ---------------------------------------------------------- */
+  _loop() {
+    if (!this.running) return;
+    this.time += 0.016;
+    this._draw();
+    requestAnimationFrame(() => this._loop());
+  }
+
+  /* ----------------------------------------------------------
+     绘制：深空背景 → 星云 → 星星（按层）→ 辉光
+     性能策略：
+       - alpha < 0.02 的星星跳过绘制
+       - 辉光仅对高亮 + 大半径星星计算
+       - 星闪事件使用预计算曲线，避免每帧 pow
+     ---------------------------------------------------------- */
+  _draw() {
+    const { ctx, w, h, time } = this;
+    const intensity = CONFIG.visual.twinkleIntensity;
+
+    // --- 深空背景 ---
+    const bgGrad = ctx.createRadialGradient(w / 2, h * 0.3, 0, w / 2, h / 2, Math.max(w, h));
+    bgGrad.addColorStop(0, '#0f0f2e');
+    bgGrad.addColorStop(0.5, '#0a0a1e');
+    bgGrad.addColorStop(1, '#050510');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // --- 星云 ---
+    for (const n of this.nebulae) {
+      const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r);
+      grad.addColorStop(0, `hsla(${n.hue},40%,60%,${n.alpha})`);
+      grad.addColorStop(0.5, `hsla(${n.hue},30%,40%,${n.alpha * 0.5})`);
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.fillRect(n.x - n.r, n.y - n.r, n.r * 2, n.r * 2);
+      n.x += n.dx;
+      n.y += n.dy;
+      if (n.x < -n.r) n.x = w + n.r;
+      if (n.x > w + n.r) n.x = -n.r;
+      if (n.y < -n.r) n.y = h + n.r;
+      if (n.y > h + n.r) n.y = -n.r;
+    }
+
+    // --- 星星渲染 ---
+    const PI2 = Math.PI * 2;
+    for (const s of this.stars) {
+      // ---- 多频段复合闪烁计算 ----
+      let twinkle = 0;
+      for (let c = 0; c < s.freqs.length; c++) {
+        twinkle += s.amps[c] * Math.sin(time * s.freqs[c] * 60 + s.phases[c]);
+      }
+
+      // ---- 星闪（sparkle）事件 ----
+      let sparkleBoost = 0;
+      if (s.sparkleActive) {
+        s.sparkleProgress += 0.016;
+        // 快速亮起（0~0.08s）→ 缓慢衰减（~0.6s）
+        if (s.sparkleProgress < 0.08) {
+          sparkleBoost = s.sparklePeak * (s.sparkleProgress / 0.08);
+        } else {
+          const decay = 1 - (s.sparkleProgress - 0.08) / 0.6;
+          sparkleBoost = s.sparklePeak * Math.max(0, decay * decay); // ease-out
+        }
+        if (s.sparkleProgress > 0.68) {
+          s.sparkleActive = false;
+          s.sparkleTimer = 1.5 + Math.random() * 4; // 冷却时间
+        }
+      } else {
+        s.sparkleTimer -= 0.016;
+        if (s.sparkleTimer <= 0 && Math.random() < s.sparkleChance * intensity) {
+          s.sparkleActive = true;
+          s.sparkleProgress = 0;
+          s.sparklePeak = 0.3 + Math.random() * 0.5;
+        }
+      }
+
+      let alpha = s.baseAlpha + twinkle + sparkleBoost;
+      alpha = Math.max(0, Math.min(1, alpha));
+
+      // 跳过几乎不可见的星星（性能优化）
+      if (alpha < 0.02) continue;
+
+      // ---- 绘制星点 ----
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, PI2);
+      ctx.fillStyle = `hsla(${s.hue},50%,80%,${alpha})`;
+      ctx.fill();
+
+      // ---- 辉光（仅高亮且较大的星星） ----
+      if (s.r > 1.2 && alpha > 0.3) {
+        const glowAlpha = alpha * 0.3;
+        const glowR = s.r * 3 * (0.7 + alpha * 0.3);
+        const glow = ctx.createRadialGradient(s.x, s.y, s.r * 0.5, s.x, s.y, glowR);
+        glow.addColorStop(0, `hsla(${s.hue},60%,90%,${glowAlpha})`);
+        glow.addColorStop(0.4, `hsla(${s.hue},50%,80%,${glowAlpha * 0.5})`);
+        glow.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow;
+        ctx.fillRect(s.x - glowR, s.y - glowR, glowR * 2, glowR * 2);
+      }
+    }
+  }
+
+  destroy() {
+    this.running = false;
+  }
+}
+
+/* ============================================================
+   FX Canvas 粒子特效系统
+   ============================================================ */
+class ParticleFX {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.particles = [];
+    this.w = 0;
+    this.h = 0;
+    this.running = true;
+    this._resize();
+    this._loop();
+    window.addEventListener('resize', () => this._resize());
+  }
+
+  _resize() {
+    this.w = this.canvas.width = window.innerWidth;
+    this.h = this.canvas.height = window.innerHeight;
+  }
+
+  emit(x, y, count, opts = {}) {
+    for (let i = 0; i < count; i++) {
+      const angle = opts.angle || Math.random() * Math.PI * 2;
+      const speed = opts.speed || (Math.random() * 3 + 1);
+      const spread = opts.spread != null ? opts.spread : Math.PI * 2;
+      const a = angle + (Math.random() - 0.5) * spread;
+      this.particles.push({
+        x, y,
+        vx: Math.cos(a) * speed,
+        vy: Math.sin(a) * speed,
+        life: opts.life || (Math.random() * 1.5 + 0.5),
+        maxLife: opts.life || 2,
+        r: opts.radius || (Math.random() * 2 + 1),
+        color: opts.color || `hsl(${30 + Math.random() * 30},70%,80%)`,
+        gravity: opts.gravity != null ? opts.gravity : 0.02,
+        fade: opts.fade != null ? opts.fade : true,
+        shrink: opts.shrink != null ? opts.shrink : true,
+      });
+    }
+  }
+
+  // 烟花爆发
+  fireworkBurst(x, y, count = 60) {
+    const colors = [
+      'hsl(40,80%,75%)', 'hsl(45,70%,80%)', 'hsl(35,90%,70%)',
+      'hsl(330,50%,75%)', 'hsl(340,60%,70%)', 'hsl(320,40%,80%)',
+      'hsl(270,40%,75%)', 'hsl(280,50%,70%)',
+    ];
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 4 + 1.5;
+      this.particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: Math.random() * 1.8 + 0.8,
+        maxLife: 2.6,
+        r: Math.random() * 2.5 + 1,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        gravity: 0.03,
+        fade: true,
+        shrink: true,
+      });
+    }
+  }
+
+  // 星轨粒子
+  orbitParticles(x, y, count = 5) {
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 20 + Math.random() * 40;
+      this.particles.push({
+        x: x + Math.cos(angle) * dist,
+        y: y + Math.sin(angle) * dist,
+        vx: -Math.sin(angle) * 0.5,
+        vy: Math.cos(angle) * 0.5,
+        life: 0.6 + Math.random() * 0.4,
+        maxLife: 1,
+        r: Math.random() * 1.5 + 0.5,
+        color: `hsl(${40 + Math.random() * 20},80%,85%)`,
+        gravity: 0,
+        fade: true,
+        shrink: true,
+        orbit: { cx: x, cy: y, angle, dist },
+      });
+    }
+  }
+
+  // 心脏炸裂粒子
+  heartExplosion(x, y) {
+    const colors = [
+      'hsl(340,80%,70%)', 'hsl(350,70%,75%)', 'hsl(0,60%,65%)',
+      'hsl(40,80%,75%)', 'hsl(45,70%,80%)', 'hsl(330,60%,70%)',
+    ];
+    for (let i = 0; i < 100; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 5 + 2;
+      this.particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1,
+        life: Math.random() * 2 + 1,
+        maxLife: 3,
+        r: Math.random() * 3 + 1.5,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        gravity: 0.04,
+        fade: true,
+        shrink: true,
+      });
+    }
+  }
+
+  // 星球主题轨道粒子 — 持续环绕星球的微粒
+  planetOrbit(x, y, theme, count = 3) {
+    const themeColors = {
+      crystal:  { hues: [250, 270, 290], sat: 60, light: 80 },
+      nebula:   { hues: [320, 340, 300], sat: 55, light: 75 },
+      lava:     { hues: [30, 40, 20], sat: 85, light: 75 },
+      ice:      { hues: [200, 210, 190], sat: 50, light: 85 },
+      stardust: { hues: [290, 310, 280], sat: 60, light: 80 },
+      ringed:   { hues: [35, 45, 25], sat: 70, light: 78 },
+    };
+    const tc = themeColors[theme] || themeColors.crystal;
+
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 30 + Math.random() * 25;
+      const hue = tc.hues[Math.floor(Math.random() * tc.hues.length)];
+      this.particles.push({
+        x: x + Math.cos(angle) * dist,
+        y: y + Math.sin(angle) * dist,
+        vx: 0, vy: 0,
+        life: 0.5 + Math.random() * 0.6,
+        maxLife: 1.1,
+        r: Math.random() * 1.8 + 0.6,
+        color: `hsl(${hue},${tc.sat}%,${tc.light}%)`,
+        gravity: 0,
+        fade: true,
+        shrink: true,
+        orbit: { cx: x, cy: y, angle, dist, speed: (Math.random() - 0.5) * 0.04 },
+      });
+    }
+  }
+
+  _loop() {
+    if (!this.running) return;
+    const { ctx, w, h } = this;
+    ctx.clearRect(0, 0, w, h);
+
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.life -= 0.016;
+      if (p.life <= 0) { this.particles.splice(i, 1); continue; }
+
+      if (p.orbit) {
+        p.orbit.angle += 0.03;
+        p.x = p.orbit.cx + Math.cos(p.orbit.angle) * p.orbit.dist;
+        p.y = p.orbit.cy + Math.sin(p.orbit.angle) * p.orbit.dist;
+        p.orbit.dist += 0.3;
+      } else {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity;
+        p.vx *= 0.995;
+        p.vy *= 0.995;
+      }
+
+      const alpha = p.fade ? Math.max(0, p.life / p.maxLife) : 1;
+      const radius = p.shrink ? p.r * alpha : p.r;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = p.color.replace(')', `,${alpha})`).replace('hsl', 'hsla');
+      ctx.fill();
+
+      // 辉光
+      if (radius > 1) {
+        const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius * 3);
+        const glowAlpha = alpha * 0.3;
+        glow.addColorStop(0, p.color.replace(')', `,${glowAlpha})`).replace('hsl', 'hsla'));
+        glow.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow;
+        ctx.fillRect(p.x - radius * 3, p.y - radius * 3, radius * 6, radius * 6);
+      }
+    }
+    requestAnimationFrame(() => this._loop());
+  }
+
+  clear() {
+    this.particles = [];
+  }
+
+  destroy() {
+    this.running = false;
+  }
+}
+
+/* ============================================================
+   代码雨特效（黑客帝国风格）
+   ============================================================ */
+class CodeRain {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.columns = 0;
+    this.drops = [];
+    this.running = false;
+    this._visible = false;
+    this._resize();
+    this._init();
+    window.addEventListener('resize', () => this._resize());
+  }
+
+  _resize() {
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+    this.columns = Math.floor(this.canvas.width / 18);
+  }
+
+  _init() {
+    this.drops = [];
+    for (let i = 0; i < this.columns; i++) {
+      this.drops[i] = Math.floor(Math.random() * -100);
+    }
+  }
+
+  show() {
+    this._visible = true;
+    this.canvas.classList.add('show');
+    if (!this.running) {
+      this.running = true;
+      this._loop();
+    }
+  }
+
+  hide() {
+    this._visible = false;
+    this.canvas.classList.remove('show');
+    this.running = false;
+  }
+
+  toggle() {
+    if (this._visible) this.hide();
+    else this.show();
+  }
+
+  _loop() {
+    if (!this.running) return;
+    const { ctx, canvas, drops, columns } = this;
+    ctx.fillStyle = 'rgba(10,10,26,0.05)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789<>/{}[]|&^%$#@!';
+
+    for (let i = 0; i < drops.length; i++) {
+      const text = chars[Math.floor(Math.random() * chars.length)];
+      const x = i * 18;
+      const y = drops[i] * 18;
+
+      // 亮度渐变
+      const gradient = ctx.createLinearGradient(x, y - 20, x, y + 20);
+      gradient.addColorStop(0, 'rgba(100,255,150,0.1)');
+      gradient.addColorStop(0.5, 'rgba(100,255,150,0.8)');
+      gradient.addColorStop(1, 'rgba(100,255,150,0.1)');
+
+      ctx.fillStyle = gradient;
+      ctx.font = '14px monospace';
+      ctx.fillText(text, x, y);
+
+      // 最前端的字符更亮
+      if (y > 0 && Math.random() > 0.98) {
+        ctx.fillStyle = 'rgba(200,255,220,0.9)';
+        ctx.fillText(text, x, y);
+      }
+
+      if (drops[i] * 18 > canvas.height && Math.random() > 0.975) {
+        drops[i] = 0;
+      }
+      drops[i]++;
+    }
+    requestAnimationFrame(() => this._loop());
+  }
+}
+
+/* ============================================================
+   应用主控
+   ============================================================ */
+class App {
+  constructor() {
+    // 状态
+    this.currentAct = 1;
+    this.unlockedPlanets = 0;
+    this.heartTaps = 0;
+    this.heartLastTap = 0;
+    this.heartMatchPercent = 0;
+    this.heartBeatTimer = 0;
+    this.heartDecayTimer = null;
+    this.heartBeatInterval = 800; // ms
+    this.heartRevealed = false;
+    this.confessionRevealed = 0;
+    this.confessionAllShown = false;
+    this.isLongPressing = false;
+    this.longPressTimer = null;
+    this.longPressProgress = 0;
+    this.transitioning = false;
+    this.planetElements = [];
+    this._pendingSMS = false;
+
+    // DOM 引用
+    this.els = {
+      app: $('#app'),
+      act1: $('#act1'),
+      act2: $('#act2'),
+      act3: $('#act3'),
+      act4: $('#act4'),
+      act5: $('#act5'),
+      act1Star: $('#act1Star'),
+      act1Progress: $('#act1Progress'),
+      act1ProgressRing: $('#act1ProgressRing'),
+      act2Trail: $('#act2Trail'),
+      act2TrailGlow: $('#act2TrailGlow'),
+      act2Container: $('#act2Container'),
+      act2FinalText: $('#act2FinalText'),
+      act3Heart: $('#act3Heart'),
+      act3Match: $('#act3Match'),
+      act3TapHint: $('#act3TapHint'),
+      act3Result: $('#act3Result'),
+      act3ResultName: $('#act3ResultName'),
+      act3Keywords: $('#act3Keywords'),
+      act4Container: $('#act4Container'),
+      act4Confession: $('#act4Confession'),
+      act4Buttons: $('#act4Buttons'),
+      act4SwipeHint: $('#act4SwipeHint'),
+      act4FadeTop: $('#act4FadeTop'),
+      act4FadeBottom: $('#act4FadeBottom'),
+      act5Card: $('#act5Card'),
+      act5CardNames: $('#act5CardNames'),
+      act5CardDate: $('#act5CardDate'),
+      memoryOverlay: $('#memoryOverlay'),
+      memoryImg: $('#memoryImg'),
+      memoryText: $('#memoryText'),
+      quizOverlay: $('#quizOverlay'),
+      quizQuestion: $('#quizQuestion'),
+      quizOptions: $('#quizOptions'),
+      quizHint: $('#quizHint'),
+      thinkOverlay: $('#thinkOverlay'),
+      msgOverlay: $('#msgOverlay'),
+      msgTextarea: $('#msgTextarea'),
+      msgCount: $('#msgCount'),
+      feedbackOverlay: $('#feedbackOverlay'),
+      cameraZoom: $('#cameraZoom'),
+      audioToggle: $('#audioToggle'),
+      act5Fireworks: $('#act5Fireworks'),
+    };
+
+    // 音频引擎
+    this.audio = new AudioEngine();
+
+    // 初始化 Canvas 图层
+    this.starfield = new Starfield($('#bgCanvas'));
+    this.fx = new ParticleFX($('#fxCanvas'));
+
+    // 绑定事件
+    this._bindEvents();
+    this._buildAct2();
+    this._buildAct4();
+    this._updateAudioIcon();
+
+    // 加载存储
+    this._loadStorage();
+  }
+
+  // ---- 本地存储 ----
+  _saveStorage() {
+    Storage.set({
+      response: this.currentAct === 5 ? 'visited' : (this.confessionAllShown ? 'revealed' : 'exploring'),
+      lastAct: this.currentAct,
+      visitTime: new Date().toISOString(),
+    });
+  }
+
+  _loadStorage() {
+    const data = Storage.get();
+    // 仅用于恢复部分状态，不自动跳转
+  }
+
+  // ---- 音频图标 ----
+  _updateAudioIcon() {
+    this.els.audioToggle.textContent = this.audio.muted ? '🔇' : '🔊';
+  }
+
+  // ---- 事件绑定 ----
+  _bindEvents() {
+    // 音频开关
+    this.els.audioToggle.addEventListener('click', () => {
+      this.audio.toggle();
+      this._updateAudioIcon();
+      if (!this.audio.muted && CONFIG.audio.bgm) {
+        this.audio.playBGM(CONFIG.audio.bgm);
+      }
+    });
+
+    // Act 1: 长按主星
+    this._bindLongPress();
+
+    // Act 2: 星球点击（委托）
+    this.els.act2Trail.addEventListener('click', (e) => {
+      const planet = e.target.closest('.act2-planet');
+      if (!planet) return;
+      const index = parseInt(planet.dataset.index);
+      this._onPlanetClick(index, planet);
+    });
+
+    // Act 3: 心跳点击
+    this.els.act3Heart.addEventListener('click', () => this._onHeartTap());
+
+    // Act 4: 向上滑动
+    this._bindSwipeUp();
+
+    // Act 4 按钮
+    $('#btnAgree').addEventListener('click', () => this._onAgree());
+    $('#btnThink').addEventListener('click', () => this._onThink());
+
+    // Think overlay
+    $('#btnReplay').addEventListener('click', () => this._replay());
+    $('#btnWriteMsg').addEventListener('click', () => this._showMsgInput());
+
+    // Message overlay
+    this.els.msgTextarea.addEventListener('input', () => {
+      const len = this.els.msgTextarea.value.length;
+      this.els.msgCount.textContent = len;
+    });
+    $('#btnMsgSubmit').addEventListener('click', () => this._onMsgSubmit());
+
+    // Feedback
+    $('#btnBackHome').addEventListener('click', () => this._replay());
+
+    // Memory close
+    $('#memoryClose').addEventListener('click', () => this._closeMemory());
+    // 点击遮罩关闭
+    this.els.memoryOverlay.querySelector('.overlay-bg').addEventListener('click', () => this._closeMemory());
+    this.els.quizOverlay.querySelector('.overlay-bg').addEventListener('click', () => {
+      this.els.quizOverlay.classList.remove('show');
+    });
+    this.els.thinkOverlay.querySelector('.act5-think-card').addEventListener('click', (e) => e.stopPropagation());
+    // Think overlay background click
+    this.els.thinkOverlay.addEventListener('click', (e) => {
+      if (e.target === this.els.thinkOverlay) this.els.thinkOverlay.classList.remove('show');
+    });
+    // Message overlay background click
+    this.els.msgOverlay.addEventListener('click', (e) => {
+      if (e.target === this.els.msgOverlay) this.els.msgOverlay.classList.remove('show');
+    });
+
+    // 全局触摸轨迹
+    document.addEventListener('touchmove', (e) => this._touchTrail(e), { passive: true });
+    document.addEventListener('mousemove', (e) => this._touchTrail(e), { passive: true });
+
+    // Act 2 滚动视差：星轨光柱随滚动微移
+    this.els.act2Container.addEventListener('scroll', () => {
+      if (this.currentAct !== 2) return;
+      const scrollY = this.els.act2Container.scrollTop;
+      this.els.act2TrailGlow.style.transform = `translateX(-50%) translateY(${scrollY * 0.03}px)`;
+    }, { passive: true });
+
+    // 页面可见性变化（从短信应用返回）
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && this._pendingSMS) {
+        this._pendingSMS = false;
+        // 用户已返回，反馈已显示
+      }
+    });
+  }
+
+  // ---- 全局触摸轨迹 ----
+  _touchTrail(e) {
+    if (Math.random() > 0.3) return;
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    this.fx.emit(x, y, 1, {
+      radius: 2,
+      life: 0.6,
+      speed: 0.2,
+      spread: 0.5,
+      gravity: 0,
+      color: 'hsl(270,40%,80%)',
+    });
+  }
+
+  // ---- Act 1: 长按交互 ----
+  _bindLongPress() {
+    const star = this.els.act1Star;
+    const progress = this.els.act1Progress;
+    const ring = this.els.act1ProgressRing;
+    const LONG_PRESS_DURATION = 1800; // ms
+
+    const startPress = (e) => {
+      if (this.transitioning || this.currentAct !== 1) return;
+      e.preventDefault();
+      this.isLongPressing = true;
+      this.longPressProgress = 0;
+      star.classList.add('pressing');
+      progress.classList.add('show');
+      ring.classList.add('show');
+      this.audio.resume();
+
+      const startTime = Date.now();
+      const updateProgress = () => {
+        if (!this.isLongPressing) return;
+        const elapsed = Date.now() - startTime;
+        this.longPressProgress = Math.min(1, elapsed / LONG_PRESS_DURATION);
+
+        // 生成星轨粒子
+        if (elapsed > 300 && Math.random() > 0.4) {
+          const rect = star.getBoundingClientRect();
+          const cx = rect.left + rect.width / 2;
+          const cy = rect.top + rect.height / 2;
+          this.fx.orbitParticles(cx, cy, 2);
+        }
+
+        if (elapsed >= LONG_PRESS_DURATION) {
+          this._onLongPressComplete();
+        } else {
+          this.longPressTimer = requestAnimationFrame(updateProgress);
+        }
+      };
+      this.longPressTimer = requestAnimationFrame(updateProgress);
+    };
+
+    const endPress = (e) => {
+      if (!this.isLongPressing) return;
+      this.isLongPressing = false;
+      cancelAnimationFrame(this.longPressTimer);
+      star.classList.remove('pressing');
+      progress.classList.remove('show');
+      ring.classList.remove('show');
+      this.longPressProgress = 0;
+    };
+
+    star.addEventListener('touchstart', startPress, { passive: false });
+    star.addEventListener('touchend', endPress);
+    star.addEventListener('touchcancel', endPress);
+    star.addEventListener('mousedown', startPress);
+    star.addEventListener('mouseup', endPress);
+    star.addEventListener('mouseleave', endPress);
+  }
+
+  _onLongPressComplete() {
+    this.isLongPressing = false;
+    this.transitioning = true;
+    cancelAnimationFrame(this.longPressTimer);
+    this.els.act1Progress.classList.remove('show');
+    this.els.act1ProgressRing.classList.remove('show');
+    this.els.act1Star.classList.remove('pressing');
+
+    // 播放 BGM
+    if (!this.audio.muted) {
+      if (CONFIG.audio.bgm) this.audio.playBGM(CONFIG.audio.bgm);
+    }
+
+    // 镜头推进效果
+    this.els.cameraZoom.classList.add('active');
+    this.audio.playCrystal();
+
+    setTimeout(() => {
+      this.els.cameraZoom.classList.remove('active');
+      this._goToAct(2);
+      this.transitioning = false;
+    }, 1000);
+  }
+
+  // ---- Act 切换 ----
+  _goToAct(actNum) {
+    // 退出当前
+    const currentEl = $(`.act.active`);
+    if (currentEl) {
+      currentEl.classList.add('exit-forward');
+      currentEl.classList.remove('active');
+      setTimeout(() => currentEl.classList.remove('exit-forward'), 800);
+    }
+
+    // 进入新 Act
+    const targetMap = { 1: this.els.act1, 2: this.els.act2, 3: this.els.act3, 4: this.els.act4, 5: this.els.act5 };
+    const target = targetMap[actNum];
+    if (target) {
+      setTimeout(() => {
+        target.classList.add('active');
+      }, 400);
+    }
+    this.currentAct = actNum;
+    this._saveStorage();
+
+    // 离开 Act 2 时清理轨道粒子定时器
+    if (actNum !== 2 && this._orbitalInterval) {
+      clearInterval(this._orbitalInterval);
+      this._orbitalInterval = null;
+    }
+
+    // 离开 Act 3 时清理定时器
+    if (this._codeRainTimer) {
+      clearTimeout(this._codeRainTimer);
+      this._codeRainTimer = null;
+    }
+    this._stopHeartDecay();
+
+    // 离开 Act 4 时关闭代码雨
+    if (actNum !== 4 && this.codeRain) {
+      this.codeRain.hide();
+    }
+
+    // Act 特定初始化
+    if (actNum === 3) this._initAct3();
+    if (actNum === 4) this._initAct4();
+  }
+
+  // ---- Act 2: 构建星轨 + 星座进度条 ----
+  _buildAct2() {
+    const trail = this.els.act2Trail;
+    // 清除旧星球
+    this.planetElements.forEach(el => el.remove());
+    this.planetElements = [];
+    this.planetStates = []; // 每颗星球的状态：'locked' | 'awakening' | 'unlocked' | 'completed'
+
+    // 重置滚动位置
+    this.els.act2Container.scrollTop = 0;
+
+    CONFIG.planets.forEach((planet, i) => {
+      const div = document.createElement('div');
+      div.className = `act2-planet ${planet.side}`;
+      div.dataset.index = i;
+      // 使用 theme 类名
+      const theme = planet.theme || 'crystal';
+      div.innerHTML = `
+        <div class="act2-planet-dot theme-${theme}"></div>
+        <div class="act2-planet-connector"></div>
+        <span class="act2-planet-label">${planet.label}</span>
+        <div class="act2-planet-unlock-fx"></div>
+      `;
+      trail.appendChild(div);
+      this.planetElements.push(div);
+      this.planetStates.push('locked');
+    });
+
+    // 初始解锁第一颗 + 第二颗进入 awakening 状态
+    if (this.planetElements.length > 0) {
+      this.planetElements[0].classList.add('unlocked');
+      this.planetStates[0] = 'unlocked';
+      this.unlockedPlanets = 1;
+      this._updateTrailGlow();
+    }
+    if (this.planetElements.length > 1) {
+      this.planetElements[1].classList.add('state-awakening');
+      this.planetStates[1] = 'awakening';
+    }
+
+    // 启动轨道粒子定时器
+    this._startOrbitalParticles();
+  }
+
+  // 启动轨道粒子系统（仅对已解锁的星球）
+  _startOrbitalParticles() {
+    if (this._orbitalInterval) clearInterval(this._orbitalInterval);
+    this._orbitalInterval = setInterval(() => {
+      if (this.currentAct !== 2) return;
+      this.planetElements.forEach((el, i) => {
+        if (this.planetStates[i] !== 'unlocked' && this.planetStates[i] !== 'completed') return;
+        const dot = el.querySelector('.act2-planet-dot');
+        if (!dot) return;
+        const rect = dot.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const theme = CONFIG.planets[i].theme || 'crystal';
+        // 每 200ms 生成 2 个轨道粒子
+        if (Math.random() < 0.5) {
+          this.fx.planetOrbit(cx, cy, theme, 2);
+        }
+      });
+    }, 200);
+  }
+
+  _updateTrailGlow() {
+    const total = CONFIG.planets.length;
+    const pct = (this.unlockedPlanets / total) * 100;
+    this.els.act2TrailGlow.style.height = pct + '%';
+  }
+
+  _onPlanetClick(index, element) {
+    if (this.transitioning) return;
+
+    // 必须按顺序解锁
+    if (index > this.unlockedPlanets) return;
+
+    // 如果已经解锁，可以重新查看
+    if (index < this.unlockedPlanets) {
+      this._showPlanetContent(index);
+      return;
+    }
+
+    // 解锁当前
+    this.unlockedPlanets = index + 1;
+    this.planetStates[index] = 'unlocked';
+    element.classList.add('unlocked');
+    element.classList.remove('state-awakening');
+    this._updateTrailGlow();
+    this.audio.playCrystal();
+
+    // 解锁爆发特效
+    this._triggerUnlockBurst(element);
+
+    // 下一颗进入 awakening
+    if (index + 1 < this.planetElements.length && this.planetStates[index + 1] === 'locked') {
+      this.planetElements[index + 1].classList.add('state-awakening');
+      this.planetStates[index + 1] = 'awakening';
+    }
+
+    // 滚动到当前星球
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // 显示内容
+    setTimeout(() => {
+      this._showPlanetContent(index);
+      // 标记为 completed
+      this.planetStates[index] = 'completed';
+      element.classList.add('state-completed');
+    }, 500);
+
+    // 检查是否全部解锁
+    if (this.unlockedPlanets >= CONFIG.planets.length) {
+      setTimeout(() => this._onAllPlanetsUnlocked(), 1500);
+    }
+  }
+
+  // 解锁爆发环特效
+  _triggerUnlockBurst(element) {
+    const fx = element.querySelector('.act2-planet-unlock-fx');
+    if (!fx) return;
+    fx.classList.remove('burst');
+    void fx.offsetWidth; // reflow
+    fx.classList.add('burst');
+
+    // 同时在 FX Canvas 上生成粒子
+    const dot = element.querySelector('.act2-planet-dot');
+    if (dot) {
+      const rect = dot.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const theme = CONFIG.planets[parseInt(element.dataset.index)].theme || 'crystal';
+      const themeHues = {
+        crystal: [250, 270, 290], nebula: [320, 340, 300],
+        lava: [30, 40, 20], ice: [200, 210, 190],
+        stardust: [290, 310, 280], ringed: [35, 45, 25],
+      };
+      const hues = themeHues[theme] || [250, 270];
+      for (let i = 0; i < 20; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2 + Math.random() * 3;
+        const hue = hues[Math.floor(Math.random() * hues.length)];
+        this.fx.particles.push({
+          x: cx, y: cy,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 0.5 + Math.random() * 0.5,
+          maxLife: 1,
+          r: 1.5 + Math.random() * 2,
+          color: `hsl(${hue},70%,80%)`,
+          gravity: 0,
+          fade: true,
+          shrink: true,
+        });
+      }
+    }
+  }
+
+  _showPlanetContent(index) {
+    const planet = CONFIG.planets[index];
+    if (planet.type === 'memory') {
+      this.els.memoryImg.src = planet.image;
+      this.els.memoryImg.alt = planet.label;
+      // 图片加载失败处理
+      this.els.memoryImg.onerror = () => {
+        this.els.memoryImg.style.display = 'none';
+      };
+      this.els.memoryImg.onload = () => {
+        this.els.memoryImg.style.display = '';
+      };
+      this.els.memoryText.textContent = planet.text;
+      this.els.memoryOverlay.classList.add('show');
+    } else if (planet.type === 'quiz') {
+      this._showQuiz(index);
+    }
+  }
+
+  _closeMemory() {
+    this.els.memoryOverlay.classList.remove('show');
+  }
+
+  _showQuiz(index) {
+    const planet = CONFIG.planets[index];
+    this.els.quizQuestion.textContent = planet.question;
+    this.els.quizOptions.innerHTML = '';
+    this.els.quizHint.classList.remove('show');
+    this.els.quizOverlay._quizIndex = index;
+
+    planet.options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'quiz-option';
+      btn.textContent = opt;
+      btn.addEventListener('click', () => this._onQuizAnswer(index, i, btn));
+      this.els.quizOptions.appendChild(btn);
+    });
+
+    this.els.quizOverlay.classList.add('show');
+  }
+
+  _onQuizAnswer(index, selected, btn) {
+    const planet = CONFIG.planets[index];
+    const allOptions = $$('.quiz-option', this.els.quizOptions);
+
+    if (selected === planet.correct) {
+      // 正确
+      btn.classList.add('correct');
+      this.els.quizHint.classList.remove('show');
+      this.audio.playCrystal();
+      setTimeout(() => {
+        this.els.quizOverlay.classList.remove('show');
+        allOptions.forEach(o => o.classList.remove('correct', 'wrong'));
+      }, 800);
+    } else {
+      // 错误
+      btn.classList.add('wrong');
+      this.els.quizHint.classList.add('show');
+      setTimeout(() => btn.classList.remove('wrong'), 500);
+    }
+  }
+
+  _onAllPlanetsUnlocked() {
+    this.transitioning = true;
+    this.els.act2FinalText.classList.add('show');
+    this.audio.playCrystal();
+
+    setTimeout(() => {
+      this.els.act2FinalText.classList.remove('show');
+      this._goToAct(3);
+      this.transitioning = false;
+    }, 2500);
+  }
+
+  // ---- Act 3: 心跳谜题 ----
+  _initAct3() {
+    this.heartTaps = 0;
+    this.heartMatchPercent = 0;
+    this.heartRevealed = false;
+    this.keywordsActive = false;
+    this.els.act3Match.textContent = '0%';
+    this.els.act3TapHint.style.display = '';
+    this.els.act3Result.classList.remove('show');
+    this.els.act3ResultName.textContent = CONFIG.names.sender;
+    this.els.act3Keywords.classList.remove('show');
+    this.els.act3Keywords.innerHTML = '';
+    this.els.act3Heart.style.opacity = '';
+    this.els.act3Heart.style.transition = '';
+    this.els.act3Heart.style.display = '';
+    this._stopHeartDecay();
+    // 关闭代码雨
+    if (this.codeRain) this.codeRain.hide();
+  }
+
+  _onHeartTap() {
+    if (this.heartRevealed) return;
+
+    this.heartTaps++;
+    this.audio.playHeartbeat();
+
+    // 连续点击递增：每次 +10~15，平滑递增
+    let increment = 10 + Math.floor(Math.random() * 6);
+    // 越接近100%增量越小，防止溢出
+    if (this.heartMatchPercent > 80) increment = 5 + Math.floor(Math.random() * 4);
+    if (this.heartMatchPercent > 95) increment = 3 + Math.floor(Math.random() * 3);
+
+    this.heartMatchPercent = Math.min(100, this.heartMatchPercent + increment);
+    this.els.act3Match.textContent = this.heartMatchPercent + '%';
+
+    // 心跳动画缩放
+    this.els.act3Heart.style.transform = 'scale(0.9)';
+    setTimeout(() => { this.els.act3Heart.style.transform = ''; }, 100);
+
+    // 重置衰减定时器，重新开始衰减
+    this._restartHeartDecay();
+
+    // 达到100%后触发炸裂效果
+    if (this.heartMatchPercent >= 100) {
+      this._revealHeartResult();
+    }
+  }
+
+  // 停止点击后平滑递减
+  _startHeartDecay() {
+    this._stopHeartDecay();
+    this.heartDecayTimer = setInterval(() => {
+      if (this.heartRevealed || this.heartMatchPercent <= 0) {
+        this._stopHeartDecay();
+        return;
+      }
+      // 平滑递减，每次 -1~2%
+      let decay = 1 + Math.random();
+      this.heartMatchPercent = Math.max(0, +(this.heartMatchPercent - decay).toFixed(1));
+      this.els.act3Match.textContent = Math.round(this.heartMatchPercent) + '%';
+    }, 200);
+  }
+
+  _stopHeartDecay() {
+    if (this.heartDecayTimer) {
+      clearInterval(this.heartDecayTimer);
+      this.heartDecayTimer = null;
+    }
+  }
+
+  _restartHeartDecay() {
+    this._stopHeartDecay();
+    // 延迟300ms后开始衰减，模拟"短暂的停顿后开始下降"
+    this.heartDecayTimer = setTimeout(() => {
+      this._startHeartDecay();
+    }, 300);
+  }
+
+  _revealHeartResult() {
+    this.heartRevealed = true;
+    this._stopHeartDecay();
+    this.els.act3TapHint.style.display = 'none';
+    this.els.act3Match.textContent = '100%';
+
+    // 心脏炸裂粒子
+    const heartRect = this.els.act3Heart.getBoundingClientRect();
+    const cx = heartRect.left + heartRect.width / 2;
+    const cy = heartRect.top + heartRect.height / 2;
+    this.fx.heartExplosion(cx, cy);
+    this.audio.playFirework();
+
+    // 隐藏心脏
+    setTimeout(() => {
+      this.els.act3Heart.style.opacity = '0';
+      this.els.act3Heart.style.transition = 'opacity 0.5s';
+    }, 300);
+
+    // 显示词云热词
+    setTimeout(() => {
+      this.els.act3Heart.style.display = 'none';
+      this._showLoveWordCloud();
+    }, 1000);
+  }
+
+  // 词云方式展示热词（散落布局，非横排）
+  _showLoveWordCloud() {
+    const words = ['真爱', '永恒', '陪伴', '心动', '誓言', '缘分', '守护', '浪漫', '幸运','真爱', '永恒', '陪伴', '心动', '誓言', '缘分', '守护', '浪漫', '幸运','真爱', '永恒', '陪伴', '心动', '誓言', '缘分', '守护', '浪漫', '幸运','真爱', 
+    '永恒', '陪伴', '心动', '誓言', '缘分', '守护', '浪漫', '幸运','永恒', '陪伴', '心动', '誓言', '缘分', '守护', '浪漫', '幸运','真爱', '永恒', '陪伴', '心动', '誓言', '缘分', '守护', '浪漫', '幸运','真爱', '真爱', '永恒', '陪伴', '心动', '誓言', '缘分', '守护', '浪漫', '幸运'];
+    const container = this.els.act3Keywords;
+    container.innerHTML = '';
+
+    // 计算词云散落位置（在容器内随机分布，避免重叠）
+    const positions = this._generateWordCloudPositions(words.length);
+
+    words.forEach((word, i) => {
+      const el = document.createElement('span');
+      el.className = 'act3-keyword';
+      el.textContent = word;
+      el.dataset.word = word;
+
+      // 词云散落布局：随机位置、随机旋转、随机大小
+      const pos = positions[i];
+      const size = 0.9 + Math.random() * 0.6; // 0.9 ~ 1.5
+      const rotate = (Math.random() - 0.5) * 30; // -15° ~ 15°
+
+      el.style.left = pos.x + '%';
+      el.style.top = pos.y + '%';
+      el.style.fontSize = (size * 1.3) + 'rem';
+      el.style.transform = `rotate(${rotate}deg)`;
+      el.style.animationDelay = (i * 0.15) + 's';
+
+      el.addEventListener('click', (e) => this._onKeywordClick(e, el));
+      container.appendChild(el);
+    });
+
+    container.classList.add('show');
+    this.keywordsActive = true;
+  }
+
+  // 生成词云散落位置（避免重叠，均匀分布）
+  _generateWordCloudPositions(count) {
+    const positions = [];
+    const minDist = 18; // 最小间距百分比
+
+    for (let i = 0; i < count; i++) {
+      let attempts = 0;
+      let x, y, valid;
+
+      do {
+        // 按区域划分：将容器分为上下两个区域，热词均匀分布
+        const region = Math.floor(i / (count / 2));
+        if (region === 0) {
+          // 上半区偏上
+          x = 10 + Math.random() * 75;
+          y = 5 + Math.random() * 40;
+        } else {
+          // 下半区偏下
+          x = 10 + Math.random() * 75;
+          y = 50 + Math.random() * 40;
+        }
+
+        valid = true;
+        for (const p of positions) {
+          const dx = x - p.x;
+          const dy = y - p.y;
+          if (Math.sqrt(dx * dx + dy * dy) < minDist) {
+            valid = false;
+            break;
+          }
+        }
+        attempts++;
+      } while (!valid && attempts < 30);
+
+      positions.push({ x, y });
+    }
+    return positions;
+  }
+
+  // 热词点击：单次点击即触发跳转
+  _onKeywordClick(e, el) {
+    if (!this.keywordsActive) return;
+    this.keywordsActive = false; // 防止连点
+
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+
+    // 1. 粒子爆发效果（使用DOM粒子，更可控）
+    this._keywordBurstParticles(cx, cy);
+
+    // 2. 音频反馈
+    this.audio.playStardust();
+
+    // 3. 热词转换为星星，飞向屏幕深处
+    el.classList.add('flying');
+    const flyX = (Math.random() - 0.5) * 200;
+    const flyY = -(400 + Math.random() * 200);
+    el.style.setProperty('--fly-x', flyX + 'px');
+    el.style.setProperty('--fly-y', flyY + 'px');
+
+    // 4. 隐藏其他热词
+    const allKeywords = this.els.act3Keywords.querySelectorAll('.act3-keyword');
+    allKeywords.forEach(kw => {
+      if (kw !== el) {
+        kw.style.transition = 'opacity 0.4s, transform 0.4s';
+        kw.style.opacity = '0';
+        kw.style.transform = 'scale(0.3)';
+      }
+    });
+
+    // 5. 单次点击即触发跳转（不等所有热词）
+    setTimeout(() => {
+      this.els.act3Keywords.classList.remove('show');
+      // 启动代码雨
+      if (!this.codeRain) {
+        this.codeRain = new CodeRain($('#codeRainCanvas'));
+      }
+      this.codeRain.show();
+      // 短暂等待后跳转到 Act 4
+      setTimeout(() => {
+        this._goToAct(4);
+      }, 800);
+    }, 800);
+  }
+
+  // 热词点击粒子爆发（DOM粒子）
+  _keywordBurstParticles(cx, cy) {
+    const colors = ['#ffb0c8', '#e8c97a', '#f0c8d8', '#c4b8e8', '#a0c8f0', '#ffd700', '#ff6b9d', '#7bed9f'];
+    for (let i = 0; i < 30; i++) {
+      const p = document.createElement('div');
+      p.className = 'keyword-burst-particle';
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 60 + Math.random() * 120;
+      const bx = Math.cos(angle) * dist;
+      const by = Math.sin(angle) * dist;
+      p.style.left = cx + 'px';
+      p.style.top = cy + 'px';
+      p.style.width = (3 + Math.random() * 5) + 'px';
+      p.style.height = p.style.width;
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.boxShadow = `0 0 6px ${p.style.background}`;
+      p.style.setProperty('--bx', bx + 'px');
+      p.style.setProperty('--by', by + 'px');
+      p.style.animationDuration = (0.6 + Math.random() * 0.4) + 's';
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 1200);
+    }
+  }
+
+  // ---- Act 4: 告白揭晓 ----
+  _buildAct4() {
+    const container = this.els.act4Confession;
+    container.innerHTML = '';
+    CONFIG.confession.forEach((line, i) => {
+      const div = document.createElement('div');
+      div.className = 'act4-line';
+      if (i === CONFIG.confession.length - 1) div.classList.add('highlight');
+      div.textContent = line;
+      div.dataset.index = i;
+      container.appendChild(div);
+    });
+  }
+
+  _initAct4() {
+    this.confessionRevealed = 0;
+    this.confessionAllShown = false;
+    this.els.act4Buttons.classList.remove('show');
+    this.els.act4SwipeHint.style.display = '';
+    $$('.act4-line').forEach(el => el.classList.remove('visible'));
+    this.els.act4Container.scrollTop = 0;
+    this.els.act4FadeTop.classList.remove('show');
+    this.els.act4FadeBottom.classList.remove('show');
+    // 显示代码雨到 Act 4（如未初始化则创建）
+    if (!this.codeRain) {
+      this.codeRain = new CodeRain($('#codeRainCanvas'));
+    }
+    this.codeRain.show();
+  }
+
+  _bindSwipeUp() {
+    const container = this.els.act4Container;
+    let startY = 0;
+    let startScroll = 0;
+    let revealed = 0;
+
+    container.addEventListener('touchstart', (e) => {
+      if (this.currentAct !== 4) return;
+      startY = e.touches[0].clientY;
+      startScroll = container.scrollTop;
+    }, { passive: true });
+
+    container.addEventListener('scroll', () => {
+      if (this.currentAct !== 4 || this.confessionAllShown) return;
+      this._revealConfessionLines();
+    });
+
+    // 也支持 wheel 事件（桌面调试）
+    container.addEventListener('wheel', () => {
+      if (this.currentAct !== 4 || this.confessionAllShown) return;
+      setTimeout(() => this._revealConfessionLines(), 100);
+    });
+  }
+
+  _revealConfessionLines() {
+    const lines = $$('.act4-line');
+    const container = this.els.act4Container;
+    const containerTop = container.getBoundingClientRect().top;
+    const threshold = window.innerHeight * 0.7;
+
+    let newRevealed = 0;
+    lines.forEach((line, i) => {
+      const rect = line.getBoundingClientRect();
+      if (rect.top < threshold && !line.classList.contains('visible')) {
+        line.classList.add('visible');
+        if (i > this.confessionRevealed - 1) {
+          newRevealed = Math.max(newRevealed, i + 1);
+        }
+      }
+    });
+
+    if (newRevealed > this.confessionRevealed) {
+      this.confessionRevealed = newRevealed;
+    }
+
+    // 渐变遮罩控制：有文字显示时显示渐变遮罩
+    const hasVisible = lines.some(l => l.classList.contains('visible'));
+    if (hasVisible) {
+      this.els.act4FadeTop.classList.add('show');
+      this.els.act4FadeBottom.classList.add('show');
+    }
+
+    // 检查是否全部显示
+    const allVisible = lines.every(l => l.classList.contains('visible'));
+    if (allVisible && !this.confessionAllShown) {
+      this.confessionAllShown = true;
+      this.els.act4SwipeHint.style.display = 'none';
+      setTimeout(() => {
+        this.els.act4Buttons.classList.add('show');
+      }, 500);
+    }
+  }
+
+  // ---- Act 5: 回应 ----
+  _onAgree() {
+    this._goToAct(5);
+    this._pendingSMS = true;
+
+    // 烟花特效
+    this._launchFireworks();
+    this.audio.playFirework();
+
+    // 播放告白语音
+    if (CONFIG.audio.voice) {
+      this.audio.playVoice(CONFIG.audio.voice);
+    }
+
+    // 显示纪念卡
+    setTimeout(() => {
+      this.els.act5Card.style.display = '';
+      this.els.act5CardNames.textContent = `${CONFIG.names.sender} ❤ ${CONFIG.names.receiver}`;
+      const now = new Date();
+      this.els.act5CardDate.textContent = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+      this._saveStorage();
+    }, 1500);
+
+    // 唤起短信
+    setTimeout(() => {
+      openSMS(CONFIG.sms.phoneNumber, CONFIG.sms.agreeMessage);
+      this.audio.playStardust();
+    }, 2500);
+
+    // 保存回应
+    Storage.set({
+      response: 'yes',
+      responseTime: new Date().toISOString(),
+    });
+  }
+
+  _launchFireworks() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const bursts = [
+      { x: w * 0.3, y: h * 0.3, delay: 0 },
+      { x: w * 0.7, y: h * 0.25, delay: 400 },
+      { x: w * 0.5, y: h * 0.4, delay: 800 },
+      { x: w * 0.2, y: h * 0.5, delay: 600 },
+      { x: w * 0.8, y: h * 0.35, delay: 1000 },
+      { x: w * 0.4, y: h * 0.2, delay: 1200 },
+      { x: w * 0.6, y: h * 0.45, delay: 1400 },
+      { x: w * 0.5, y: h * 0.3, delay: 1800 },
+    ];
+
+    bursts.forEach(b => {
+      setTimeout(() => {
+        this.fx.fireworkBurst(b.x, b.y, 50 + Math.floor(Math.random() * 30));
+        this.audio.playFirework();
+      }, b.delay);
+    });
+  }
+
+  _onThink() {
+    this.els.thinkOverlay.classList.add('show');
+    Storage.set({
+      response: 'maybe',
+      responseTime: new Date().toISOString(),
+    });
+  }
+
+  _replay() {
+    this.els.thinkOverlay.classList.remove('show');
+    this.els.feedbackOverlay.classList.remove('show');
+    this.els.act5Card.style.display = 'none';
+    this.fx.clear();
+
+    // 重置所有状态
+    this.unlockedPlanets = 0;
+    this.heartTaps = 0;
+    this.heartMatchPercent = 0;
+    this.heartRevealed = false;
+    this.keywordsActive = false;
+    this.confessionRevealed = 0;
+    this.confessionAllShown = false;
+    this.transitioning = false;
+    this._pendingSMS = false;
+    this._stopHeartDecay();
+
+    // 重置 Act 2
+    this.planetElements.forEach(el => el.classList.remove('unlocked'));
+    this._buildAct2();
+
+    // 重置 Act 3
+    this.els.act3Match.textContent = '0%';
+    this.els.act3TapHint.style.display = '';
+    this.els.act3Result.classList.remove('show');
+    this.els.act3Heart.style.opacity = '';
+    this.els.act3Heart.style.transition = '';
+    this.els.act3Keywords.classList.remove('show');
+    this.els.act3Keywords.innerHTML = '';
+
+    // 重置 Act 4
+    this._initAct4();
+    this.els.act4Buttons.classList.remove('show');
+
+    // 关闭代码雨
+    if (this.codeRain) this.codeRain.hide();
+
+    // 回到 Act 1
+    this._goToAct(1);
+  }
+
+  _showMsgInput() {
+    this.els.thinkOverlay.classList.remove('show');
+    this.els.msgTextarea.value = '';
+    this.els.msgCount.textContent = '0';
+    this.els.msgOverlay.classList.add('show');
+    setTimeout(() => this.els.msgTextarea.focus(), 400);
+  }
+
+  _onMsgSubmit() {
+    const text = this.els.msgTextarea.value.trim();
+    if (!text) {
+      showToast('写点什么再送出呀～');
+      return;
+    }
+
+    this.els.msgOverlay.classList.remove('show');
+    this.audio.playStardust();
+
+    // 保存到本地存储
+    Storage.set({
+      customMessage: text,
+      customMessageTime: new Date().toISOString(),
+      response: 'custom',
+    });
+
+    this._pendingSMS = true;
+    // 唤起短信
+    const sent = openSMS(CONFIG.sms.phoneNumber, text);
+
+    // 显示反馈
+    setTimeout(() => {
+      this.els.feedbackOverlay.classList.add('show');
+    }, sent ? 300 : 100);
+  }
+}
+
+/* ============================================================
+   启动应用
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  const app = new App();
+
+  // 初始时自动显示第一颗星球为 unlocked
+  // （已在 _buildAct2 中处理）
+
+  // 如果 PC 端，预先显示提示
+  if (!isMobile()) {
+    console.log('💫 星轨漫游・告白企划 — 建议在手机端打开以获得完整体验');
+  }
+
+  // 页面隐藏时暂停不必要的动画
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      // 可选：暂停 Canvas 循环
+    }
+  });
+});
+
+// 全局错误处理（防止音频等非关键错误影响体验）
+window.addEventListener('error', (e) => {
+  if (e.target && e.target.tagName === 'AUDIO') {
+    e.preventDefault();
+  }
+}, true);
+</script>
+</body>
+</html>
