@@ -821,12 +821,18 @@ img {
   position: relative;
 }
 
-.about__image img {
+.about__image img,
+.about__image video {
   border-radius: 20px;
   box-shadow: var(--shadow-lg);
   width: 100%;
   height: 420px;
   object-fit: cover;
+  display: block;
+}
+
+.about__grid--spaced {
+  margin-top: 4.5rem;
 }
 
 .about__image::after {

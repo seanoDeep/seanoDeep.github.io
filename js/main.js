@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let typeSpeed = 100;
 
   function type() {
+    if (!typedEl) return;
     const current = words[wordIdx];
     if (isDeleting) {
       charIdx--;
@@ -69,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     header.classList.toggle('scrolled', window.scrollY > 50);
 
     // 回到顶部按钮
-    backToTop.classList.toggle('show', window.scrollY > 600);
+    if (backToTop) backToTop.classList.toggle('show', window.scrollY > 600);
 
     // 高亮当前导航链接
     updateActiveNav();
@@ -137,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
    * 一级菜单点击：展开/收起（手风琴互斥）
    * 仅对含有 collapse-inner 的下拉生效，无内容的链接正常跳转
    */
-  document.querySelectorAll('.nav__link--dropdown').forEach(dropdownLink => {
+  document.querySelectorAll('.nav__link--dropdown:not(.nav__link--news)').forEach(dropdownLink => {
     const wrapper = dropdownLink.closest('.nav__dropdown-wrapper');
     const hasContent = wrapper && wrapper.querySelector('.collapse-inner');
 
@@ -162,6 +163,26 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  /**
+   * 新闻资讯：新标签页打开（target="_blank"），同时展开子菜单且不折叠父级
+   * 不调用 preventDefault，保留浏览器原生新窗口行为
+   */
+  const newsLink = document.getElementById('nav-news-link');
+  if (newsLink) {
+    const newsWrapper = newsLink.closest('.nav__dropdown-wrapper');
+    newsLink.addEventListener('click', () => {
+      if (!newsWrapper) return;
+      // 已展开 → 保持展开；未展开 → 展开（与其它一级菜单一致，互斥收起其他项）
+      if (!newsWrapper.classList.contains('open')) {
+        document.querySelectorAll('.nav__dropdown-wrapper.open').forEach(w => {
+          w.classList.remove('open');
+          w.querySelectorAll('.nav__submenu-wrapper.open').forEach(sw => sw.classList.remove('open'));
+        });
+        newsWrapper.classList.add('open');
+      }
+    });
+  }
 
   /**
    * 二级子菜单点击：展开/收起
@@ -192,12 +213,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav__dropdown-link[data-portfolio-filter]').forEach(link => {
     link.addEventListener('click', (e) => {
       if (!isMobile()) return;
+      const homeSection = document.getElementById('home');
+      // 非首页：关闭菜单并放行原生锚点跳转
+      if (!homeSection) {
+        closeMobileMenu();
+        return;
+      }
       e.preventDefault();
       closeMobileMenu();
-      const homeSection = document.getElementById('home');
-      if (homeSection) {
-        homeSection.scrollIntoView({ behavior: 'smooth' });
-      }
+      homeSection.scrollIntoView({ behavior: 'smooth' });
       setTimeout(() => {
         const filterBtn = document.querySelector(`.hero__carousel-filter[data-filter="${link.dataset.portfolioFilter}"]`);
         if (filterBtn) filterBtn.click();
@@ -234,6 +258,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const sections = document.querySelectorAll('section[id]');
     const navLinks = document.querySelectorAll('.nav__link');
     let current = '';
+
+    // 非首页（无站内锚点分区）不做高亮判定
+    if (sections.length === 0) return;
 
     sections.forEach(section => {
       const top = section.offsetTop - 100;
@@ -399,10 +426,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav__dropdown-link[data-portfolio-filter]').forEach(link => {
     link.addEventListener('click', (e) => {
       if (isMobile()) return; // 移动端由上面的 handler 处理
+      const homeSection = document.getElementById('home');
+      // 非首页：无筛选目标，放行原生锚点跳转
+      if (!homeSection) return;
       e.preventDefault();
       const filterValue = link.dataset.portfolioFilter;
-      const homeSection = document.getElementById('home');
-      if (homeSection) homeSection.scrollIntoView({ behavior: 'smooth' });
+      homeSection.scrollIntoView({ behavior: 'smooth' });
       const filterBtn = document.querySelector(`.hero__carousel-filter[data-filter="${filterValue}"]`);
       if (filterBtn) {
         setTimeout(() => filterBtn.click(), 500);
@@ -445,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ESC 关闭
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && loginModal.classList.contains('show')) {
+    if (e.key === 'Escape' && loginModal && loginModal.classList.contains('show')) {
       closeModal();
     }
   });

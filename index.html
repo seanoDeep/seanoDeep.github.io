@@ -16,43 +16,46 @@
   <!-- ==================== 导航栏 ==================== -->
   <header class="header" id="header">
     <nav class="nav container">
-	  
-      <a href="#home" class="nav__logo">Hai<span>.</span>Bus</a>
+      <div style="display:flex;align-items:center;gap:10px;">
+  <!-- 商标图片，把src换成你的商标路径 -->
+        <img src="img/yangshi.ico" alt="商标" style="height:36px;">
+    <a href="#home" class="nav__logo">Hai<span>.</span>Bus</a> 
+  <!--         <span style="font-size:36px;font-weight:bold;color:#222;">Hai.Bus</span> -->
+      </div>
+
+ 
       <ul class="nav__menu" id="nav-menu">
         <li><a href="#home" class="nav__link active">首页</a></li>
         <li><a href="#about" class="nav__link">关于我们</a></li>
         <li class="nav__dropdown-wrapper">
-          <a href="#services" class="nav__link nav__link--dropdown">
-            业务领域 
-          </a>
+          <a href="#services" class="nav__link nav__link--dropdown">业务领域 </a>
         </li>
         <li><a href="#contact" class="nav__link">联系我们</a></li>
-       <li class="nav__dropdown-wrapper" id="nav-dropdown-wrapper">
-          <a href="#home" class="nav__link nav__link--dropdown" id="nav-portfolio-link">
-            信息中心 <i class="fas fa-chevron-down nav__dropdown-arrow" aria-hidden="true"></i>
+        <li class="nav__dropdown-wrapper" id="nav-dropdown-wrapper">
+          <a href="./News/news.html" class="nav__link nav__link--dropdown nav__link--news" id="nav-news-link" target="_blank" rel="noopener noreferrer"> 新闻资讯 
+          
+           <i class="fas fa-chevron-down nav__dropdown-arrow" aria-hidden="true"></i>
           </a>
           <div class="collapse-inner">
             <ul class="nav__dropdown" id="nav-dropdown">
               <li class="nav__submenu-wrapper">
                 <a href="#home" class="nav__dropdown-link nav__dropdown-link--sub">
-                  项目 <i class="fas fa-chevron-right nav__submenu-arrow" aria-hidden="true"></i>
+                  团队展示 <i class="fas fa-chevron-right nav__submenu-arrow" aria-hidden="true"></i>
                 </a>
                 <div class="collapse-inner">
                   <ul class="nav__submenu">
-                    <li><a href="https://mp.weixin.qq.com/s/8FgGAmS8zmmex2mU1gCcbw" class="nav__dropdown-link">项目演示一</a></li>
-                    <li><a href="love/index.html" class="nav__dropdown-link">星轨漫游</a></li>
+                    <li><a href="https://mp.weixin.qq.com/s/8FgGAmS8zmmex2mU1gCcbw" class="nav__dropdown-link">作品开源</a></li>
+                    <li><a href="https://www.axureshow.com/project/1jN4Mmne/" class="nav__dropdown-link">唯爱</a></li>
                   </ul>
                 </div>
               </li>
-              <li><a href="#home" class="nav__dropdown-link" data-portfolio-filter="brand">设计理念</a></li>
-              <li><a href="#home" class="nav__dropdown-link" data-portfolio-filter="web">开发作品</a></li>
-              <li><a href="#home" class="nav__dropdown-link" data-portfolio-filter="ui">其他</a></li>
+              <li><a href="#home" class="nav__dropdown-link" data-portfolio-filter="ui">最新动态</a></li>
             </ul>
           </div>
         </li>
         <li class="nav__dropdown-wrapper">
           <a href="#" class="nav__link nav__link--dropdown">
-            资源下载 <i class="fas fa-chevron-down nav__dropdown-arrow" aria-hidden="true"></i>
+            资源中心 <i class="fas fa-chevron-down nav__dropdown-arrow" aria-hidden="true"></i>
           </a>
           <div class="collapse-inner">
             <ul class="nav__dropdown">
@@ -95,12 +98,13 @@
 			确认偏误、沉没成本谬误与乐观偏见、幸存者偏差将要引导你步入
 			深渊，你不是鲁莽;你很有野心。
 			当你以为一切的开销都显得合理，认为每一次拓展投入都是进步，殊不知野火 正在悄然蔓延...</p>
-			<P>我们致力于提前索引到这些问题，用多维度以及专业的能力为你提供最有利的解决方案不正是你所需要的吗？否则你不愿做出改变</p>
+			<P style="margin-bottom:20px;">我们致力于提前索引到这些问题，用多维度以及专业的能力为你提供最有利的解决方案不正是你所需要的吗？</p>
+        
           </p>
           <div class="hero__actions">
           		<!--href="#services"-->
             <a href="https://weixin.qq.com/r/mp/gRzext-EJIJbrZul90mT" class="btn btn--primary">查看更多</a>
-            <a href="#contact" class="btn btn--outline">联系我</a>
+            <a href="#contact" class="btn btn--outline">联系我们</a>
           </div> 
           <div class="hero__social">
             <a href="https://github.com/" title="GitHub" ><i class="fab fa-github"></i></a>
@@ -187,12 +191,12 @@
         <span class="section__subtitle">Who I Am</span>
         <div class="about__grid">
           <div class="about__image">
-            <img src="./img/160_54.ico" alt="工作环境">
+            <video src="https://tx-safety-video.acfun.cn/mediacloud/acfun/acfun_video/hls/tCwcHozxnfCWqs1ERnOmdm7UT11Z84VnRifWQ1jyl9Jiq6IooRwz2zhnobzrrU2g.m3u8?pkey=ABAg6qbUEkzDofYspOQiOzB6PEv_ouLjShp4vltaHoizsHc6djnbY-wrgzL7rZEis8KZTlmeIpqOITeKsIPXxnhq4F_YyW2n6T23P7qfb3Rn9xlvKeroeT-OQFEJOW2Si5RjuBjbM_daTIA0NDhG6mmDbLz8FJXikD0aLXInopRULG7oqQBFzXVsqo5ruAuMdq5UieMcE_tlpzt0AYoksPcvv_Nkm_pbWUvlL2SZKv1m4W_UgYKr4Yo-nSu46A3uRKA&safety_id=AAKSAbeVWItBp5FdI4WNHL4D" autoplay muted loop playsinline preload="auto" aria-label="团队展示视频"></video>
           </div>
           <div class="about__content">
             <h3>山不在高有仙则名，水不在深有龙则灵</h3>
             <p class="duanluo">
-              自2022年10月起，先后服务于华某科技有限公司招商银行某分中心、上海某房地产经纪有限公司、某县直政府部门办公室。
+              自2022年10月起，先后服务于华某科技有限公司、招商银行某分中心、上海某房地产经纪有限公司、某县直政府部门办公室。
             </p>
             <p class="duanluo">
               拥有生产<b>技术文档撰写</b>能力，自动化编排与生产。两段头部企业<b>营销岗位</b>从业经历，深耕市场一线，具备成熟客户对接、业务拓展与商务沟通能力；兼具办公室综合事务实操经验，
@@ -220,8 +224,61 @@
                 <span class="about__stat-number" data-count="20">0</span>+
                 <span class="about__stat-label">完成项目</span>
               </div>
-            </div>
-            <a href="#contact" class="btn btn--primary">了解更多</a>
+              <a href="#contact" class="btn btn--primary">了解更多</a>
+              </div>
+          </div>
+        </div>
+
+        <!-- 团队介绍：左图右文 -->
+        <div class="about__grid about__grid--spaced">
+          <div class="about__image">
+            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=professional%20team%20collaboration%20in%20modern%20office%2C%20diverse%20people%20discussing%20around%20a%20table%20with%20laptops%2C%20bright%20natural%20light%2C%20realistic%20corporate%20photography&image_size=landscape_4_3" alt="团队介绍">
+          </div>
+          <div class="about__content">
+            <h3>团队介绍</h3>
+            <p class="duanluo">
+              我们是一支横跨市场一线与技术一线的复合型团队，成员来自头部科技企业、房地产经纪行业与政府部门办公室，
+              兼具商务拓展的攻坚能力与行政办公的严谨细致。
+            </p>
+            <p class="duanluo">
+              从客户需求对接到技术方案落地，每位成员都能在各自擅长的环节独当一面，
+              又能无缝协作完成跨领域项目，让创意与执行力在同一张桌子上相遇。
+            </p>
+          </div>
+        </div>
+
+        <!-- 团队文化：右图左文 -->
+        <div class="about__grid about__grid--spaced">
+          <div class="about__content">
+            <h3>团队文化</h3>
+            <p class="duanluo">
+              我们相信：真正的专业，是提前看见问题的能力。与其在野火蔓延后补救，不如在星火未燃时索引风险。
+            </p>
+            <p class="duanluo">
+              务实、克制、长期主义是我们的底色——不迷信幸存者偏差讲出的故事，不被沉没成本绑架判断，
+              用多维度的视角审视每一个决策，用可验证的结果回应每一份信任。
+            </p>
+          </div>
+          <div class="about__image">
+            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=team%20culture%20concept%2C%20colleagues%20celebrating%20success%20together%2C%20sticky%20notes%20on%20glass%20wall%2C%20warm%20office%20atmosphere%2C%20realistic%20photography&image_size=landscape_4_3" alt="团队文化">
+          </div>
+        </div>
+
+        <!-- 团队简介：左图右文 -->
+        <div class="about__grid about__grid--spaced">
+          <div class="about__image">
+            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=modern%20creative%20studio%20workspace%2C%20designers%20and%20developers%20working%20on%20computers%2C%20minimalist%20office%20interior%2C%20cinematic%20lighting%2C%20realistic%20photography&image_size=landscape_4_3" alt="团队简介">
+          </div>
+          <div class="about__content">
+            <h3>团队简介</h3>
+            <p class="duanluo">
+              HaiBus 专注于产品赋能变现、Web 开发与内容创作，融合现代人工大模型自动化办公与脚本编写能力，
+              为企业提供从品牌视觉、官网落地页到数字营销的一站式解决方案。
+            </p>
+            <p class="duanluo">
+              截至目前，我们已服务超过 110 位成交客户，交付 20 余个完整项目，
+              用技术文档撰写能力与自动化生产能力，持续为合作伙伴创造可衡量的价值。
+            </p>
           </div>
         </div>
       </div>
@@ -275,7 +332,7 @@
     <!-- ==================== 联系 ==================== -->
     <section class="contact section" id="contact">
       <div class="container">
-        <h2 class="section__title">联系我</h2>
+        <h2 class="section__title">联系我们</h2>
         <span class="section__subtitle">Get In Touch</span>
         <div class="contact__grid">
           <div class="contact__info">
