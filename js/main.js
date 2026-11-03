@@ -245,13 +245,52 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * 简历下载：弹窗提示
    */
-  document.getElementById('nav-resume-download')?.addEventListener('click', (e) => {
-    if (!isMobile()) return;
-    e.preventDefault();
-    alert('请与管理员联系获取授权码');
-    window.open('https://pan.baidu.com/s/1lZLtCSo5SQx34tonhAD1AQ', '_blank');
-    closeMobileMenu();
-  });
+  const resumeDownloadLink = document.getElementById('nav-resume-download');
+  if (resumeDownloadLink) {
+    resumeDownloadLink.addEventListener('click', (e) => {
+      if (!isMobile()) return;
+      e.preventDefault();
+      alert('请与管理员联系获取授权码');
+      window.open('https://pan.baidu.com/s/1lZLtCSo5SQx34tonhAD1AQ', '_blank');
+      closeMobileMenu();
+    });
+  }
+
+  /* ========== 关于模块视频：移动端兼容性检测 ========== */
+  const aboutVideo = document.getElementById('about-video');
+  if (aboutVideo) {
+    const isMobileViewport = () => window.matchMedia('(max-width: 768px)').matches;
+
+    // 隐藏视频及其容器，避免移动端留下空白占位
+    const hideAboutVideo = () => {
+      const wrapper = aboutVideo.closest('.about__image');
+      if (wrapper) wrapper.classList.add('about__image--hidden');
+      aboutVideo.pause();
+      aboutVideo.removeAttribute('src');
+      aboutVideo.load();
+    };
+
+    // 1. 静态检测：HLS(m3u8) 仅 Safari 内核移动端原生支持
+    const hlsSupported = aboutVideo.canPlayType('application/vnd.apple.mpegurl') !== '';
+    const autoplaySupported = 'play' in aboutVideo;
+
+    if (isMobileViewport() && (!hlsSupported || !autoplaySupported)) {
+      hideAboutVideo();
+    } else {
+      // 2. 运行期兜底：移动端解码/加载失败时自动隐藏
+      aboutVideo.addEventListener('error', () => {
+        if (isMobileViewport()) hideAboutVideo();
+      }, { once: true });
+
+      // 3. 自动播放被系统策略拦截时，移动端不渲染该视频
+      const playPromise = typeof aboutVideo.play === 'function' ? aboutVideo.play() : null;
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {
+          if (isMobileViewport()) hideAboutVideo();
+        });
+      }
+    }
+  }
 
   /* ========== 当前导航高亮 ========== */
   function updateActiveNav() {
@@ -418,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ========== 初始触发（页面加载时已可见的元素） ========== */
   setTimeout(() => {
-    const aboutRect = aboutSection?.getBoundingClientRect();
+    const aboutRect = aboutSection ? aboutSection.getBoundingClientRect() : null;
     if (aboutRect && aboutRect.top < window.innerHeight) animateCounters();
   }, 300);
 

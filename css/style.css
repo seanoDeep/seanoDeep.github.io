@@ -821,6 +821,11 @@ img {
   position: relative;
 }
 
+/* 移动端视频不兼容时隐藏整个媒体容器，避免留下空白占位 */
+.about__image--hidden {
+  display: none;
+}
+
 .about__image img,
 .about__image video {
   border-radius: 20px;
@@ -1561,9 +1566,100 @@ img {
     grid-template-columns: 1fr;
   }
 
-  .footer__grid {
-    grid-template-columns: 1fr;
+  /* ---- 关于模块移动端排版优化 ---- */
+  .about__grid {
     gap: 2rem;
+  }
+
+  .about__grid--spaced {
+    margin-top: 3rem;
+  }
+
+  .about__image {
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  .about__image img,
+  .about__image video {
+    height: auto;
+    aspect-ratio: 16 / 9;
+    border-radius: 16px;
+  }
+
+  .about__image::after {
+    top: 10px;
+    left: 10px;
+    border-radius: 16px;
+  }
+
+  .about__content h3 {
+    font-size: 1.35rem;
+    margin-bottom: 1rem;
+  }
+
+  .about__content p {
+    margin-bottom: 1.25rem;
+    line-height: 1.75;
+  }
+
+  .about__stats {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .about__stat-number {
+    font-size: 1.75rem;
+  }
+
+  .about__stat-label {
+    font-size: 0.78rem;
+  }
+
+  /* 【了解更多】按钮：缩小至移动端自然比例，保留 44px 点击热区 */
+  .about__stats .btn {
+    padding: 0.6rem 1.25rem;
+    font-size: 0.875rem;
+    min-height: 44px;
+    flex-shrink: 0;
+  }
+
+  /* ---- 页脚移动端左右分栏布局 ---- */
+  .footer__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem 1.25rem;
+    margin-bottom: 2rem;
+    align-items: start;
+  }
+
+  .footer__brand,
+  .footer__newsletter {
+    grid-column: 1 / -1;
+  }
+
+  .footer__brand p {
+    max-width: none;
+  }
+
+  .footer__links h4 {
+    margin-bottom: 0.9rem;
+  }
+
+  .footer__links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0.25rem 0;
+  }
+
+  .footer__social a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
   }
 
   .footer__bottom {
